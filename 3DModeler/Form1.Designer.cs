@@ -29,40 +29,55 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            pictureBox1 = new PictureBox();
-            timer1 = new System.Windows.Forms.Timer(components);
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            Viewer = new PictureBox();
+            Clock = new System.Windows.Forms.Timer(components);
+            FPS = new Label();
+            ((System.ComponentModel.ISupportInitialize)Viewer).BeginInit();
             SuspendLayout();
             // 
-            // pictureBox1
+            // Viewer
             // 
-            pictureBox1.Location = new Point(56, 50);
-            pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(669, 354);
-            pictureBox1.TabIndex = 0;
-            pictureBox1.TabStop = false;
-            pictureBox1.Paint += pictureBox1_Paint;
+            Viewer.Location = new Point(175, 10);
+            Viewer.Name = "Viewer";
+            Viewer.Size = new Size(1000, 800);
+            Viewer.TabIndex = 0;
+            Viewer.TabStop = false;
+            Viewer.Paint += Viewer_Paint;
             // 
-            // timer1
+            // Clock
             // 
-            timer1.Tick += timer1_Tick;
+            Clock.Tick += Clock_Tick;
+            // 
+            // FPS
+            // 
+            FPS.AutoSize = true;
+            FPS.Location = new Point(30, 72);
+            FPS.Name = "FPS";
+            FPS.Size = new Size(57, 32);
+            FPS.TabIndex = 1;
+            FPS.Text = "FPS:";
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
-            Controls.Add(pictureBox1);
+            ClientSize = new Size(1202, 841);
+            Controls.Add(FPS);
+            Controls.Add(Viewer);
             Name = "Form1";
-            Text = "Form1";
+            Text = "3DModeler";
             Load += Form1_Load;
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            KeyDown += Form1_KeyDown;
+            KeyUp += Form1_KeyUp;
+            ((System.ComponentModel.ISupportInitialize)Viewer).EndInit();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
 
-        private PictureBox pictureBox1;
-        private System.Windows.Forms.Timer timer1;
+        private PictureBox Viewer;
+        private System.Windows.Forms.Timer Clock;
+        private Label FPS;
     }
 }
