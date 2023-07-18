@@ -37,7 +37,7 @@
             // 
             // Viewer
             // 
-            Viewer.Location = new Point(175, 10);
+            Viewer.Location = new Point(262, 12);
             Viewer.Name = "Viewer";
             Viewer.Size = new Size(1000, 800);
             Viewer.TabIndex = 0;
@@ -61,7 +61,7 @@
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1202, 841);
+            ClientSize = new Size(1274, 929);
             Controls.Add(FPS);
             Controls.Add(Viewer);
             Name = "Form1";

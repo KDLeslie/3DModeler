@@ -283,9 +283,9 @@ namespace _3DModeler
             foreach (Triangle tri in world.meshCube.tris)
             {
                 //tri.t[2].u = 121;
-                
+
                 Triangle triTransformed = new Triangle();
-                
+
 
                 // World Matrix Tranform
                 triTransformed.p[0] = Matrix_MultiplyVector(matWorld, tri.p[0]);
@@ -437,6 +437,7 @@ namespace _3DModeler
             //        world.DrawPixel(Color.Cyan, x, y, e);
 
             e.Graphics.FillRectangle(new SolidBrush(Color.Cyan), 0, 0, world.screenWidth, world.screenHeight);
+            world.screen.Dispose();
             world.screen = new DirectBitmap(world.screenWidth, world.screenHeight);
 
             // Clear Depth Buffer
@@ -575,7 +576,7 @@ namespace _3DModeler
 
             // Setup Projection Matrix
             world.matProj = Matrix_MakeProjection(90.0f, (float)world.screenHeight / (float)world.screenWidth, 0.1f, 1000.0f);
-            
+
         }
 
         private void Clock_Tick(object sender, EventArgs e)
@@ -622,7 +623,7 @@ namespace _3DModeler
             public int pixelHeight { get; set; }
             public float[] pDepthBuffer { get; set; }
             public PaintEventArgs e { get; set; }
-            public DirectBitmap screen { get; set; }
+            public DirectBitmap screen { get; set; } = new DirectBitmap(1,1);
 
 
             public int Triangle_ClipAgainstPlane(Vec3d plane_p, Vec3d plane_n, Triangle in_tri, ref Triangle out_tri1, ref Triangle out_tri2)
@@ -1326,7 +1327,7 @@ namespace _3DModeler
                 Width = width;
                 Height = height;
                 Bits = new Int32[width * height];
-                for(int y = 0; y < width * height; y++)
+                for (int y = 0; y < width * height; y++)
                 {
                     Bits[y] = color.ToArgb();
                 }
@@ -1334,7 +1335,7 @@ namespace _3DModeler
                 Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
             }
 
-            public DirectBitmap(string filePath)  
+            public DirectBitmap(string filePath)
             {
                 Bitmap bitmap = new Bitmap(filePath);
                 Width = bitmap.Width;
@@ -1342,7 +1343,7 @@ namespace _3DModeler
                 Bits = new Int32[Width * Height];
                 BitsHandle = GCHandle.Alloc(Bits, GCHandleType.Pinned);
                 Bitmap = new Bitmap(Width, Height, Width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
-                
+
                 for (int h = 0; h < bitmap.Height; h++)
                 {
                     for (int w = 0; w < bitmap.Width; w++)
