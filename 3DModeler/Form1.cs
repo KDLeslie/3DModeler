@@ -24,8 +24,10 @@ namespace _3DModeler
 
         View world;
         int frames = 0;
+        float frameTime = 0;
         float time = 0;
         float time2 = 0;
+        float elapsedTime = 0;
 
 
         Dictionary<Keys, bool> keyPressed = new Dictionary<Keys, bool>()
@@ -97,98 +99,90 @@ namespace _3DModeler
             // Loads an object from a file. Returns true if successful
             public bool LoadFromObjectFile(string sFilename, bool bHasTexture = false)
             {
-                try
+                // Create an instance of StreamReader to read from a file.
+                // The using statement also closes the StreamReader.
+                using (StreamReader sr = new StreamReader(sFilename))
                 {
-                    // Create an instance of StreamReader to read from a file.
-                    // The using statement also closes the StreamReader.
-                    using (StreamReader sr = new StreamReader(sFilename))
+                    // Stores the vertices to be indexed through 
+                    List<Vec3d> verts = new List<Vec3d>();
+                    List<Vec2d> texs = new List<Vec2d>();
+                    string line;
+                    // Read and display lines from the file until the end of
+                    // the file is reached.
+                    while ((line = sr.ReadLine()) != null)
                     {
-                        // Stores the vertices to be indexed through 
-                        List<Vec3d> verts = new List<Vec3d>();
-                        List<Vec2d> texs = new List<Vec2d>();
-                        string line;
-                        // Read and display lines from the file until the end of
-                        // the file is reached.
-                        while ((line = sr.ReadLine()) != null)
+                        if (line[0] == 'v')
                         {
-                            if (line[0] == 'v')
+                            if (line[1] == 't')
                             {
-                                if (line[1] == 't')
-                                {
 
-                                    string[] subs = line.Split(' ');
-                                    Vec2d v = new Vec2d();
-                                    v.u = float.Parse(subs[1]);
-                                    v.v = float.Parse(subs[2]);
-                                    // u, v coordinates have bottom left as (0,0) but sprites have top left has (0,0)
-                                    // Invert the v-coordinate to match our system.
-                                    v.v = 1.0f - v.v;
-                                    texs.Add(v);
+                                string[] subs = line.Split(' ');
+                                Vec2d v = new Vec2d();
+                                v.u = float.Parse(subs[1]);
+                                v.v = float.Parse(subs[2]);
+                                // u, v coordinates have bottom left as (0,0) but sprites have top left has (0,0)
+                                // Invert the v-coordinate to match our system.
+                                v.v = 1.0f - v.v;
+                                texs.Add(v);
 
-                                }
-                                else
-                                {
-
-                                    string[] subs = line.Split(' ');
-                                    Vec3d v = new Vec3d();
-                                    v.x = float.Parse(subs[1]);
-                                    v.y = float.Parse(subs[2]);
-                                    v.z = float.Parse(subs[3]);
-                                    verts.Add(v);
-                                }
-                            }
-                            if (!bHasTexture)
-                            {
-                                if (line[0] == 'f')
-                                {
-                                    int[] f = new int[3];
-                                    string[] subs = line.Split(' ');
-                                    f[0] = int.Parse(subs[1]);
-                                    f[1] = int.Parse(subs[2]);
-                                    f[2] = int.Parse(subs[3]);
-                                    // obj files use 1 indexing so our indicies are off by 1
-                                    Triangle triangle = new Triangle();
-                                    triangle.p[0] = verts[f[0] - 1];
-                                    triangle.p[1] = verts[f[1] - 1];
-                                    triangle.p[2] = verts[f[2] - 1];
-                                    tris.Add(triangle);
-                                }
                             }
                             else
                             {
-                                if (line[0] == 'f')
-                                {
-                                    string[] subs = line.Split(' ');
-                                    int[] p = new int[3];
-                                    int[] t = new int[3];
-                                    for (int i = 0; i < 4; i++)
-                                    {
-                                        string[] subsubs = subs[i + 1].Split('/');
-                                        p[i] = int.Parse(subsubs[0]);
-                                        t[i] = int.Parse(subsubs[1]);
-                                    }
-                                    Triangle triangle = new Triangle();
-                                    triangle.p[0] = verts[p[0] - 1];
-                                    triangle.p[1] = verts[p[1] - 1];
-                                    triangle.p[2] = verts[p[2] - 1];
-                                    triangle.t[0] = texs[t[0] - 1];
-                                    triangle.t[1] = texs[t[1] - 1];
-                                    triangle.t[2] = texs[t[2] - 1];
-                                    tris.Add(triangle);
-                                }
 
+                                string[] subs = line.Split(' ');
+                                Vec3d v = new Vec3d();
+                                v.x = float.Parse(subs[1]);
+                                v.y = float.Parse(subs[2]);
+                                v.z = float.Parse(subs[3]);
+                                verts.Add(v);
                             }
                         }
+                        if (!bHasTexture)
+                        {
+                            if (line[0] == 'f')
+                            {
+                                int[] f = new int[3];
+                                string[] subs = line.Split(' ');
+                                f[0] = int.Parse(subs[1]);
+                                f[1] = int.Parse(subs[2]);
+                                f[2] = int.Parse(subs[3]);
+                                // obj files use 1 indexing so our indicies are off by 1
+                                Triangle triangle = new Triangle();
+                                triangle.p[0] = verts[f[0] - 1];
+                                triangle.p[1] = verts[f[1] - 1];
+                                triangle.p[2] = verts[f[2] - 1];
+                                tris.Add(triangle);
+                            }
+                        }
+                        else
+                        {
+                            if (line[0] == 'f')
+                            {
+                                string[] subs = line.Split(' ');
+                                int[] p = new int[3];
+                                int[] t = new int[3];
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    string[] subsubs = subs[i + 1].Split('/');
+                                    p[i] = int.Parse(subsubs[0]);
+                                    t[i] = int.Parse(subsubs[1]);
+                                }
+                                Triangle triangle = new Triangle();
+                                triangle.p[0] = verts[p[0] - 1];
+                                triangle.p[1] = verts[p[1] - 1];
+                                triangle.p[2] = verts[p[2] - 1];
+                                triangle.t[0] = texs[t[0] - 1];
+                                triangle.t[1] = texs[t[1] - 1];
+                                triangle.t[2] = texs[t[2] - 1];
+                                tris.Add(triangle);
+                            }
+
+                        }
                     }
-                    return true;
                 }
-                catch (Exception e)
-                {
-                    // Let the user know what went wrong.
-                    MessageBox.Show("File could not be read");
-                    MessageBox.Show(e.Message);
-                    return false;
-                }
+                return true;
+
+
             }
         }
 
@@ -201,7 +195,7 @@ namespace _3DModeler
             // sw.Stop();
             // TimeSpan ts = sw.Elapsed;
             world.e = e;
-            float fElapsedTime = time2; // In seconds
+            float fElapsedTime = elapsedTime; // In seconds
             if (keyPressed[Keys.Up])
                 world.vCamera = Vector_Add(world.vCamera, new Vec3d(0, 8.0f * fElapsedTime, 0));   // Travel along positive y-axis
 
@@ -245,7 +239,7 @@ namespace _3DModeler
 
             Mat4x4 matTrans;
             // Offsets the world
-            matTrans = Matrix_MakeTranslation(0.0f, -1.2f, -0.2f);
+            matTrans = Matrix_MakeTranslation(0.0f, 0.0f, 5.0f);
 
             // Transforms must be done with scaling first, then x, y, and z rotations, then 
             // translations
@@ -409,11 +403,6 @@ namespace _3DModeler
                         vecTrianglesToRaster.Add(triProjected);
 
 
-
-
-
-
-
                     }
                 }
             }
@@ -506,7 +495,7 @@ namespace _3DModeler
                         (int)t.p[1].x, (int)t.p[1].y, t.t[1].u, t.t[1].v, t.t[1].w,
                         (int)t.p[2].x, (int)t.p[2].y, t.t[2].u, t.t[2].v, t.t[2].w, world.sprTex1);
 
-                    e.Graphics.DrawImage(world.screen.Bitmap, 0, 0);
+                    
 
                     //world.e.Graphics.DrawLine(new Pen(Color.Black), t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y);
                     //world.e.Graphics.DrawLine(new Pen(Color.Black), t.p[0].x, t.p[0].y, t.p[2].x, t.p[2].y);
@@ -529,7 +518,7 @@ namespace _3DModeler
             }
 
 
-
+            e.Graphics.DrawImage(world.screen.Bitmap, 0, 0);
             //e.Graphics.FillRectangle(new System.Drawing.SolidBrush(Color.Black), new Rectangle(0, 0, Viewer.Width, Viewer.Height));
             //// e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             //Pen greenPen = new Pen(Color.FromArgb(255, 0, 255, 0), 10);
@@ -541,30 +530,31 @@ namespace _3DModeler
         {
             this.DoubleBuffered = true;
             sw.Start();
-            Clock.Interval = 2;
+            Clock.Interval = 20;
             Clock.Enabled = true;
             world = new View(Viewer.Width, Viewer.Height, 1, 1);
-            // SOUTH
-            world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 0), new Vec3d(0, 1, 0), new Vec3d(1, 1, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 0), new Vec3d(1, 1, 0), new Vec3d(1, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            // EAST
-            world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 0), new Vec3d(1, 1, 0), new Vec3d(1, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 0), new Vec3d(1, 1, 1), new Vec3d(1, 0, 1), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            // NORTH
-            world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(1, 1, 1), new Vec3d(0, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 1, 1), new Vec3d(0, 0, 1), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            // WEST
-            world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 1), new Vec3d(0, 1, 1), new Vec3d(0, 1, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 1), new Vec3d(0, 1, 0), new Vec3d(0, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            // TOP
-            world.meshCube.tris.Add(new Triangle(new Vec3d(0, 1, 0), new Vec3d(0, 1, 1), new Vec3d(1, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            world.meshCube.tris.Add(new Triangle(new Vec3d(0, 1, 0), new Vec3d(1, 1, 1), new Vec3d(1, 1, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            // BOTTOM
-            world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 0, 1), new Vec3d(0, 0, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 0, 0), new Vec3d(1, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
+            //// SOUTH
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 0), new Vec3d(0, 1, 0), new Vec3d(1, 1, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 0), new Vec3d(1, 1, 0), new Vec3d(1, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
+            //// EAST
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 0), new Vec3d(1, 1, 0), new Vec3d(1, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 0), new Vec3d(1, 1, 1), new Vec3d(1, 0, 1), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
+            //// NORTH
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(1, 1, 1), new Vec3d(0, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 1, 1), new Vec3d(0, 0, 1), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
+            //// WEST
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 1), new Vec3d(0, 1, 1), new Vec3d(0, 1, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 1), new Vec3d(0, 1, 0), new Vec3d(0, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
+            //// TOP
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 1, 0), new Vec3d(0, 1, 1), new Vec3d(1, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 1, 0), new Vec3d(1, 1, 1), new Vec3d(1, 1, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
+            //// BOTTOM
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 0, 1), new Vec3d(0, 0, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
+            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 0, 0), new Vec3d(1, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
 
-            // world.meshCube.LoadFromObjectFile("spyro_level.obj", true);
-            world.sprTex1 = new DirectBitmap("block.png");
+            world.meshCube.LoadFromObjectFile("spyro_level.obj", true);
+            world.sprTex1 = new DirectBitmap("high.png");
+            world.sprTex1.Bitmap.Save("yosh.png");
             //world.sprTex1 = new DirectBitmap(bitmap.Width, bitmap.Height);
             //for (int h = 0; h < bitmap.Height; h++)
             //{
@@ -582,17 +572,21 @@ namespace _3DModeler
         private void Clock_Tick(object sender, EventArgs e)
         {
             time2 = (float)sw.Elapsed.TotalSeconds;
-            sw.Restart();
+            elapsedTime = time2 - time;
+            time = time2;
+            // sw.Restart();
             Viewer.Refresh();
-            time += (float)sw.Elapsed.TotalSeconds;
+            frameTime += elapsedTime;
             frames += 1;
-            if (time >= 1.0f)
+            if (frameTime >= 1.0f)
             {
-                time -= 1.0f;
+                frameTime -= 1.0f;
                 FPS.Text = frames.ToString();
                 frames = 0;
 
             }
+            label1.Text = frames.ToString();
+            label2.Text = sw.Elapsed.TotalSeconds.ToString();
             //int fps = (int)(1 / (sw.Elapsed.Milliseconds / 1000.0f));
 
 
@@ -623,7 +617,7 @@ namespace _3DModeler
             public int pixelHeight { get; set; }
             public float[] pDepthBuffer { get; set; }
             public PaintEventArgs e { get; set; }
-            public DirectBitmap screen { get; set; } = new DirectBitmap(1,1);
+            public DirectBitmap screen { get; set; } = new DirectBitmap(1, 1);
 
 
             public int Triangle_ClipAgainstPlane(Vec3d plane_p, Vec3d plane_n, Triangle in_tri, ref Triangle out_tri1, ref Triangle out_tri2)
@@ -891,7 +885,7 @@ namespace _3DModeler
                                 // scale up texel coordinates to the height and width of the textures
                                 int w = (int)((tex_u / tex_w) * sprTex1.Width - 0.5);
                                 int h = (int)((tex_v / tex_w) * sprTex1.Height - 0.5);
-
+                                Color c = tex.GetPixel(w, h);
                                 screen.SetPixel(j, i, tex.GetPixel(w, h));
                                 // DrawPixel(tex.GetPixel(w, h), j, i, e);
                                 pDepthBuffer[i * screenWidth + j] = tex_w;
@@ -957,7 +951,7 @@ namespace _3DModeler
                             {
                                 int w = (int)((tex_u / tex_w) * sprTex1.Width - 0.5);
                                 int h = (int)((tex_v / tex_w) * sprTex1.Height - 0.5);
-
+                                Color c = tex.GetPixel(w, h);
                                 screen.SetPixel(j, i, tex.GetPixel(w, h));
                                 // DrawPixel(tex.GetPixel(w, h), j, i, e);
                                 pDepthBuffer[i * screenWidth + j] = tex_w;
@@ -1348,7 +1342,7 @@ namespace _3DModeler
                 {
                     for (int w = 0; w < bitmap.Width; w++)
                     {
-                        Bits[w + h * bitmap.Height] = bitmap.GetPixel(w, h).ToArgb();
+                        Bits[w + h * bitmap.Width] = bitmap.GetPixel(w, h).ToArgb();
                     }
                 }
             }

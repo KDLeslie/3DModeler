@@ -32,6 +32,8 @@
             Viewer = new PictureBox();
             Clock = new System.Windows.Forms.Timer(components);
             FPS = new Label();
+            label1 = new Label();
+            label2 = new Label();
             ((System.ComponentModel.ISupportInitialize)Viewer).BeginInit();
             SuspendLayout();
             // 
@@ -57,11 +59,31 @@
             FPS.TabIndex = 1;
             FPS.Text = "FPS:";
             // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(42, 163);
+            label1.Name = "label1";
+            label1.Size = new Size(78, 32);
+            label1.TabIndex = 2;
+            label1.Text = "label1";
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(42, 224);
+            label2.Name = "label2";
+            label2.Size = new Size(78, 32);
+            label2.TabIndex = 3;
+            label2.Text = "label2";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1274, 929);
+            Controls.Add(label2);
+            Controls.Add(label1);
             Controls.Add(FPS);
             Controls.Add(Viewer);
             Name = "Form1";
@@ -79,5 +101,7 @@
         private PictureBox Viewer;
         private System.Windows.Forms.Timer Clock;
         private Label FPS;
+        private Label label1;
+        private Label label2;
     }
 }
