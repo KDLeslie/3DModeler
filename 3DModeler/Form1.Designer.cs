@@ -39,7 +39,7 @@
             // 
             // Viewer
             // 
-            Viewer.Location = new Point(262, 12);
+            Viewer.Location = new Point(362, 12);
             Viewer.Name = "Viewer";
             Viewer.Size = new Size(1000, 800);
             Viewer.TabIndex = 0;
@@ -53,7 +53,7 @@
             // FPS
             // 
             FPS.AutoSize = true;
-            FPS.Location = new Point(30, 72);
+            FPS.Location = new Point(12, 68);
             FPS.Name = "FPS";
             FPS.Size = new Size(57, 32);
             FPS.TabIndex = 1;
@@ -62,7 +62,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(42, 163);
+            label1.Location = new Point(12, 100);
             label1.Name = "label1";
             label1.Size = new Size(78, 32);
             label1.TabIndex = 2;
@@ -71,7 +71,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(42, 224);
+            label2.Location = new Point(12, 132);
             label2.Name = "label2";
             label2.Size = new Size(78, 32);
             label2.TabIndex = 3;
@@ -81,7 +81,7 @@
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1274, 929);
+            ClientSize = new Size(1374, 879);
             Controls.Add(label2);
             Controls.Add(label1);
             Controls.Add(FPS);

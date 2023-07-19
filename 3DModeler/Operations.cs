@@ -14,18 +14,12 @@ namespace _3DModeler
         // A 2D structure to hold texture coordinates
         public struct Vec2d
         {
-            public Vec2d() 
-            { 
-                this.u = 0;
-                this.v = 0;
-                this.w = 1;
-            }
+            public Vec2d() { }
 
             public Vec2d(float u, float v) 
             { 
                 this.u = u;
                 this.v = v;
-                this.w = 1;
             }
             public Vec2d(Vec2d vec2D)
             {
@@ -33,28 +27,22 @@ namespace _3DModeler
                 this.v = vec2D.v;
                 this.w = vec2D.w;
             }
-            public float u { get; set; } 
-            public float v { get; set; } 
-            public float w { get; set; } // Keeps track of the depth of each texture coordinate
+            public float u = 0;
+            public float v = 0;
+            public float w = 1; // Keeps track of the depth of each texture coordinate
 
         }
 
         // A 3D structure to hold vertex coordinates
         public struct Vec3d
         {
-            public Vec3d() 
-            { 
-                this.x = 0;
-                this.y = 0;
-                this.z = 0;
-                this.w = 1;
-            }
+            public Vec3d() { }
+
             public Vec3d(float x, float y, float z)
             {
                 this.x = x;
                 this.y = y; 
                 this.z = z;
-                this.w = 1;
             }
             public Vec3d(Vec3d vec3D)
             {
@@ -63,10 +51,10 @@ namespace _3DModeler
                 this.y = vec3D.y;
                 this.z = vec3D.z;
             }
-            public float x { get; set; }
-            public float y { get; set; }
-            public float z { get; set; }
-            public float w { get; set; } = 1; // 4th term is needed for vector multiplication
+            public float x = 0;
+            public float y = 0;
+            public float z = 0;
+            public float w = 1; // 4th term is needed for vector multiplication
         }
 
         public struct Mat4x4
@@ -75,16 +63,18 @@ namespace _3DModeler
             {
             }
 
-            public float[,] m { get; set; } = new float[4, 4];
+            public float[,] m = new float[4, 4];
         }
 
-        public static Vec3d Matrix_MultiplyVector(Mat4x4 m, Vec3d i)
+        public static Vec3d Matrix_MultiplyVector(ref Mat4x4 m, ref Vec3d i)
         {
-            Vec3d v = new Vec3d();
-            v.x = i.x * m.m[0,0] + i.y * m.m[1,0] + i.z * m.m[2,0] + i.w * m.m[3,0];
-            v.y = i.x * m.m[0,1] + i.y * m.m[1,1] + i.z * m.m[2,1] + i.w * m.m[3,1];
-            v.z = i.x * m.m[0,2] + i.y * m.m[1,2] + i.z * m.m[2,2] + i.w * m.m[3,2];
-            v.w = i.x * m.m[0,3] + i.y * m.m[1,3] + i.z * m.m[2,3] + i.w * m.m[3,3];
+            Vec3d v = new Vec3d
+            {
+                x = i.x * m.m[0, 0] + i.y * m.m[1, 0] + i.z * m.m[2, 0] + i.w * m.m[3, 0],
+                y = i.x * m.m[0, 1] + i.y * m.m[1, 1] + i.z * m.m[2, 1] + i.w * m.m[3, 1],
+                z = i.x * m.m[0, 2] + i.y * m.m[1, 2] + i.z * m.m[2, 2] + i.w * m.m[3, 2],
+                w = i.x * m.m[0, 3] + i.y * m.m[1, 3] + i.z * m.m[2, 3] + i.w * m.m[3, 3]
+            };
             return v;
         }
         public static Mat4x4 Matrix_MakeIdentity()
@@ -162,7 +152,7 @@ namespace _3DModeler
             return matrix;
         }
 
-        public static Mat4x4 Matrix_MultiplyMatrix(Mat4x4 m1, Mat4x4 m2)
+        public static Mat4x4 Matrix_MultiplyMatrix(ref Mat4x4 m1, ref Mat4x4 m2)
         {
             Mat4x4 matrix = new Mat4x4();
             for (int c = 0; c < 4; c++)
@@ -171,19 +161,19 @@ namespace _3DModeler
             return matrix;
         }
 
-        public static Mat4x4 Matrix_PointAt(Vec3d pos, Vec3d target, Vec3d up)
+        public static Mat4x4 Matrix_PointAt(ref Vec3d pos, ref Vec3d target, ref Vec3d up)
         {
             // calculate new forward direction
-            Vec3d newForward = Vector_Sub(target, pos);
-            newForward = Vector_Normalize(newForward);
+            Vec3d newForward = Vector_Sub(ref target, ref pos);
+            newForward = Vector_Normalize(ref newForward);
 
             // Calculate new Up direction incase foward vector has a y-component
-            Vec3d a = Vector_Mul(newForward, Vector_DotProduct(up, newForward));
-            Vec3d newUp = Vector_Sub(up, a);
-            newUp = Vector_Normalize(newUp);
+            Vec3d a = Vector_Mul(ref newForward, Vector_DotProduct(ref up, ref newForward));
+            Vec3d newUp = Vector_Sub(ref up, ref a);
+            newUp = Vector_Normalize(ref newUp);
 
             // New Right direction is easy, its just cross product
-            Vec3d newRight = Vector_CrossProduct(newUp, newForward);
+            Vec3d newRight = Vector_CrossProduct(ref newUp, ref newForward);
 
             // Construct Dimensioning and Translation Matrix	
             Mat4x4 matrix = new Mat4x4();
@@ -194,7 +184,7 @@ namespace _3DModeler
             return matrix;
         }
 
-        public static Mat4x4 Matrix_QuickInverse(Mat4x4 m) // Only for Rotation/Translation Matrices
+        public static Mat4x4 Matrix_QuickInverse(ref Mat4x4 m) // Only for Rotation/Translation Matrices
         {
             Mat4x4 matrix = new Mat4x4();
             matrix.m[0,0] = m.m[0,0]; matrix.m[0,1] = m.m[1,0]; matrix.m[0,2] = m.m[2,0]; matrix.m[0,3] = 0.0f;
@@ -208,80 +198,92 @@ namespace _3DModeler
         }
 
 
-        public static Vec3d Vector_Add(Vec3d v1, Vec3d v2)
+        public static Vec3d Vector_Add(ref Vec3d v1, ref Vec3d v2)
         {
-            Vec3d vec3D = new Vec3d();
-            vec3D.x = v1.x + v2.x;
-            vec3D.y = v1.y + v2.y;
-            vec3D.z = v1.z + v2.z;
+            Vec3d vec3D = new Vec3d
+            {
+                x = v1.x + v2.x,
+                y = v1.y + v2.y,
+                z = v1.z + v2.z
+            };
             return vec3D;
         }
 
-        public static Vec3d Vector_Sub(Vec3d v1, Vec3d v2)
+        public static Vec3d Vector_Sub(ref Vec3d v1, ref Vec3d v2)
         {
-            Vec3d vec3D = new Vec3d();
-            vec3D.x = v1.x - v2.x;
-            vec3D.y = v1.y - v2.y;
-            vec3D.z = v1.z - v2.z;
+            Vec3d vec3D = new Vec3d
+            {
+                x = v1.x - v2.x,
+                y = v1.y - v2.y,
+                z = v1.z - v2.z
+            };
             return vec3D;
         }
 
-        public static  Vec3d Vector_Mul(Vec3d v1, float k)
+        public static  Vec3d Vector_Mul(ref Vec3d v1, float k)
         {
-            Vec3d vec3D = new Vec3d();
-            vec3D.x = v1.x * k;
-            vec3D.y = v1.y * k;
-            vec3D.z = v1.z * k;
+            Vec3d vec3D = new Vec3d
+            {
+                x = v1.x * k,
+                y = v1.y * k,
+                z = v1.z * k
+            };
             return vec3D;
         }
 
-        public static Vec3d Vector_Div(Vec3d v1, float k)
+        public static Vec3d Vector_Div(ref Vec3d v1, float k)
         {
-            Vec3d vec3D = new Vec3d();
-            vec3D.x = v1.x / k;
-            vec3D.y = v1.y / k;
-            vec3D.z = v1.z / k;
+            Vec3d vec3D = new Vec3d
+            {
+                x = v1.x / k, 
+                y = v1.y / k, 
+                z = v1.z / k 
+            };
             return vec3D;
         }
 
-        public static float Vector_DotProduct(Vec3d v1, Vec3d v2)
+        public static float Vector_DotProduct(ref Vec3d v1, ref Vec3d v2)
         {
             return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
         }
 
-        public static float Vector_Length(Vec3d v)
+        public static float Vector_Length(ref Vec3d v)
         {
-            return MathF.Sqrt(Vector_DotProduct(v, v));
+            return MathF.Sqrt(Vector_DotProduct(ref v, ref v));
         }
 
-        public static Vec3d Vector_Normalize(Vec3d v)
+        public static Vec3d Vector_Normalize(ref Vec3d v)
         {
-            float l = Vector_Length(v);
-            Vec3d vec3D = new Vec3d();
-            vec3D.x = v.x / l;
-            vec3D.y = v.y / l;
-            vec3D.z = v.z / l;
+            float l = Vector_Length(ref v);
+            Vec3d vec3D = new Vec3d
+            {
+                x = v.x / l,
+                y = v.y / l,
+                z = v.z / l
+            };
             return vec3D;
         }
 
-        public static Vec3d Vector_CrossProduct(Vec3d v1, Vec3d v2)
+        public static Vec3d Vector_CrossProduct(ref Vec3d v1, ref Vec3d v2)
         {
-            Vec3d v = new Vec3d();
-            v.x = v1.y * v2.z - v1.z * v2.y;
-            v.y = v1.z * v2.x - v1.x * v2.z;
-            v.z = v1.x * v2.y - v1.y * v2.x;
+            Vec3d v = new Vec3d
+            {
+                x = v1.y * v2.z - v1.z * v2.y,
+                y = v1.z * v2.x - v1.x * v2.z,
+                z = v1.x * v2.y - v1.y * v2.x
+            };          
             return v;
         }
-        public static Vec3d Vector_IntersectPlane(Vec3d plane_p, Vec3d plane_n, Vec3d lineStart, Vec3d lineEnd, ref float t)
+        public static Vec3d Vector_IntersectPlane(ref Vec3d plane_p, ref Vec3d plane_n, ref Vec3d lineStart, ref Vec3d lineEnd, ref float t)
         {
-            plane_n = Vector_Normalize(plane_n);
-            float plane_d = -Vector_DotProduct(plane_n, plane_p);
-            float ad = Vector_DotProduct(lineStart, plane_n);
-            float bd = Vector_DotProduct(lineEnd, plane_n);
+            plane_n = Vector_Normalize(ref plane_n);
+            float plane_d = -Vector_DotProduct(ref plane_n, ref plane_p);
+            float ad = Vector_DotProduct(ref lineStart, ref plane_n);
+            float bd = Vector_DotProduct(ref lineEnd, ref plane_n);
             t = (-plane_d - ad) / (bd - ad);
-            Vec3d lineStartToEnd = Vector_Sub(lineEnd, lineStart);
-            Vec3d lineToIntersect = Vector_Mul(lineStartToEnd, t);
-            return Vector_Add(lineStart, lineToIntersect);
+            Vec3d lineStartToEnd = Vector_Sub(ref lineEnd, ref lineStart);
+            Vec3d lineToIntersect = Vector_Mul(ref lineStartToEnd, t);
+            return Vector_Add(ref lineStart, ref lineToIntersect);
         }
 
     }
