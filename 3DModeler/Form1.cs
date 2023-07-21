@@ -24,10 +24,11 @@ namespace _3DModeler
 
         View world;
         int frames = 0; // Stores how many frames are rendered each second
-        float frameTime = 0; // 
+        float frameTime = 0; // Stores the cumulative time between frames 
         float tick = 0;
         float tock = 0;
         float fElapsedTime = 0;  // Stores the time between each frame in seconds
+        List<Mesh> meshes = new List<Mesh>(); // Stores each mesh loaded from an obj file
 
         // Stores what keys the user is currently pressing
         Dictionary<Keys, bool> keyPressed = new Dictionary<Keys, bool>()
@@ -83,9 +84,15 @@ namespace _3DModeler
 
             // Mesh supports only triangular faces
             public List<Triangle> tris = new List<Triangle>();
+
+            public DirectBitmap Texture = new DirectBitmap();
+
+            public bool hasTexture = false;
             // Loads an object from a file. Returns true if successful
-            public bool LoadFromObjectFile(string sFilename, bool bHasTexture = false)
+            public bool LoadObjectFromFile(string sFilename, ref string materialName, ref bool hasMaterial)
             {
+                // by default
+                hasMaterial = false;
                 // Create an instance of StreamReader to read from a file.
                 // The using statement also closes the StreamReader.
                 using (StreamReader sr = new StreamReader(sFilename))
@@ -129,7 +136,13 @@ namespace _3DModeler
                                 verts.Add(v);
                             }
                         }
-                        if (!bHasTexture)
+                        if (line[0] == 'm')
+                        {
+                            string[] indices = line.Split(' ');
+                            materialName = indices[1];
+                            hasMaterial = true;
+                        }
+                        if (!hasMaterial)
                         {
                             if (line[0] == 'f')
                             {
@@ -175,6 +188,35 @@ namespace _3DModeler
                 }
                 return true;
             }
+
+            public bool LoadMaterialFromFile(string sFilename, ref string texturePath, ref bool hasTexture)
+            {
+                hasTexture = false;
+                using (StreamReader sr = new StreamReader(sFilename))
+                {
+                    string line;
+                    // Read lines from the file until the end of the file
+                    // is reached.
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        // catches empty lines
+                        if (line.Length == 0) continue;
+
+                        if (line[0] == 'm')
+                        {
+                            string[] indices = line.Split(' ');
+                            texturePath = indices[1];
+                            hasTexture = true;
+                        }
+                    }
+                }
+                return true;
+            }
+            public bool LoadTextureFromFile(string sFilename)
+            {
+                Texture = new DirectBitmap(sFilename);
+                return true;
+            }
         }
 
         class View
@@ -187,7 +229,7 @@ namespace _3DModeler
                 this.pixelHeight = pixelHeight;
                 this.pDepthBuffer = new float[screenWidth * screenHeight];
             }
-            public Mesh meshCube = new Mesh();
+            // public Mesh meshCube = new Mesh();
             public Mat4x4 matProj = new Mat4x4(); // Matrix that converts from view space to screen space
             public Vec3d vCamera = new Vec3d(); // Location of camera in world space
             public Vec3d vLookDir = new Vec3d(); // Direction vector along the direction camera points
@@ -199,7 +241,6 @@ namespace _3DModeler
             public int pixelWidth { get; set; }
             public int pixelHeight { get; set; }
             public float[] pDepthBuffer { get; set; }
-            public DirectBitmap sprTex1 = new DirectBitmap(1, 1); // A sprite that holds the texture
             public DirectBitmap screen = new DirectBitmap(1, 1); // A bitmap representing the frame drawn to the picturebox
 
             public int Triangle_ClipAgainstPlane(Vec3d plane_p, Vec3d plane_n, ref Triangle in_tri, ref Triangle out_tri1, ref Triangle out_tri2)
@@ -350,7 +391,7 @@ namespace _3DModeler
 
             public void ConstructBitmap(int x1, int y1, float u1, float v1, float w1,
                 int x2, int y2, float u2, float v2, float w2,
-                int x3, int y3, float u3, float v3, float w3,
+                int x3, int y3, float u3, float v3, float w3, DirectBitmap texture,
                 int colorARGB = -1, bool hasTexture = false)
             {
                 // Swaps the variables so that y1 < y2 < y3
@@ -407,6 +448,7 @@ namespace _3DModeler
                     dw1_step = 0, dw2_step = 0;
 
                 // as long as the line is not horizontal, dy will not be zero
+                // how much we move per x coordinate
                 if (dy1 != 0) dax_step = dx1 / MathF.Abs(dy1);
                 if (dy2 != 0) dbx_step = dx2 / MathF.Abs(dy2);
 
@@ -465,15 +507,15 @@ namespace _3DModeler
                             {
                                 // divide by tex_w to get un-normalized texel coordinate
                                 // scale up texel coordinates to the height and width of the textures
-                                int w = (int)((tex_u / tex_w) * sprTex1.Width - 0.5);
-                                int h = (int)((tex_v / tex_w) * sprTex1.Height - 0.5);
+                                int w = (int)((tex_u / tex_w) * texture.Width - 0.5);
+                                int h = (int)((tex_v / tex_w) * texture.Height - 0.5);
                                 if (!hasTexture)
                                 {
                                     screen.SetPixel(j, i, Color.FromArgb(colorARGB));
                                 }
                                 else
                                 {
-                                    screen.SetPixel(j, i, sprTex1.GetPixel(w, h));
+                                    screen.SetPixel(j, i, texture.GetPixel(w, h));
                                 }
                                 pDepthBuffer[i * screenWidth + j] = tex_w;
                             }
@@ -536,15 +578,15 @@ namespace _3DModeler
 
                             if (tex_w > pDepthBuffer[i * screenWidth + j])
                             {
-                                int w = (int)((tex_u / tex_w) * sprTex1.Width - 0.5);
-                                int h = (int)((tex_v / tex_w) * sprTex1.Height - 0.5);
+                                int w = (int)((tex_u / tex_w) * texture.Width - 0.5);
+                                int h = (int)((tex_v / tex_w) * texture.Height - 0.5);
                                 if (!hasTexture)
                                 {
                                     screen.SetPixel(j, i, Color.FromArgb(colorARGB));
                                 }
                                 else
                                 {
-                                    screen.SetPixel(j, i, sprTex1.GetPixel(w, h));
+                                    screen.SetPixel(j, i, texture.GetPixel(w, h));
                                 }
                                 pDepthBuffer[i * screenWidth + j] = tex_w;
                             }
@@ -553,188 +595,6 @@ namespace _3DModeler
                     }
                 }
             }
-            //void DrawTriangleTest(int x1, int y1, float w1, int x2, int y2, float w2,
-            //	int x3, int y3, float w3, olc::Pixel colour = olc::BLACK)
-            //{
-            //	// Swaps the variables so that y1 < y2 < y3
-            //	// y1 appears at the top of the screen
-            //	if (y2 < y1)
-            //	{
-            //		swap(y1, y2);
-            //		swap(x1, x2);
-            //		swap(w1, w2);
-            //	}
-
-            //	if (y3 < y1)
-            //	{
-            //		swap(y1, y3);
-            //		swap(x1, x3);
-            //		swap(w1, w3);
-            //	}
-
-            //	if (y3 < y2)
-            //	{
-            //		swap(y2, y3);
-            //		swap(x2, x3);
-            //		swap(w2, w3);
-            //	}
-
-            //	// pixel domain is integers. Can't move half a pixel
-            //	// one side of triangle
-            //	int dy1 = y2 - y1;
-            //	int dx1 = x2 - x1;
-            //	float dw1 = w2 - w1;
-
-            //	// second side of triangle
-            //	int dy2 = y3 - y1;
-            //	int dx2 = x3 - x1;
-            //	float dw2 = w3 - w1;
-
-            //	float tex_u, tex_v, tex_w;
-
-            //	float dax_step = 0, dbx_step = 0,
-            //		dw1_step = 0, dw2_step = 0;
-
-            //	// as long as the line is not horizontal, dy will not be zero
-            //	// how much backward/forward we have to move per row of pixels
-            //	if (dy1) dax_step = dx1 / (float)abs(dy1);
-            //	if (dy2) dbx_step = dx2 / (float)abs(dy2);
-
-            //	if (dy1) dw1_step = dw1 / (float)abs(dy1);
-
-            //	if (dy2) dw2_step = dw2 / (float)abs(dy2);
-
-            //	// as long as the line isnt flat
-            //	// draw top half of triangle
-            //	if (dy1)
-            //	{
-            //		for (int i = y1; i <= y2; i++)
-            //		{
-            //			// get one point on the row
-            //			int ax = x1 + (float)(i - y1) * dax_step;
-            //			// get the other point on the row
-            //			int bx = x1 + (float)(i - y1) * dbx_step;
-
-            //			float tex_sw = w1 + (float)(i - y1) * dw1_step;
-
-            //			float tex_ew = w1 + (float)(i - y1) * dw2_step;
-            //			// ensure ax is the starting point
-            //			if (ax > bx)
-            //			{
-            //				swap(ax, bx);
-            //				swap(tex_sw, tex_ew);
-            //			}
-
-            //			// for each side of the row
-
-            //			if (tex_sw > pDepthBuffer[i * ScreenWidth() + ax])
-            //			{
-            //				Draw(ax, i, colour);
-            //				pDepthBuffer[i * ScreenWidth() + ax] = tex_sw;
-            //			}
-
-            //			if (tex_ew > pDepthBuffer[i * ScreenWidth() + bx])
-            //			{
-            //				Draw(bx, i, colour);
-            //				pDepthBuffer[i * ScreenWidth() + bx] = tex_ew;
-            //			}
-
-            //		}
-            //	}
-            //	// top is flat
-            //	else
-            //	{
-            //			if (x1 > x2)
-            //			{
-            //				swap(x1, x2);
-            //				swap(w1, w2);
-            //			}
-
-            //			tex_w = w1;
-
-            //			float tstep = 1.0f / ((float)(x2 - x1));
-            //			float t = 0.0f;
-
-            //			for (int j = x1; j < x2; j++)
-            //			{
-            //				tex_w = (1.0f - t) * w1 + t * w2;
-
-            //				if (tex_w > pDepthBuffer[y1 * ScreenWidth() + j])
-            //				{
-            //					Draw(j, y1, colour);
-            //					pDepthBuffer[y1 * ScreenWidth() + j] = tex_w;
-            //				}
-            //				t += tstep;
-            //			}
-            //	}
-
-            //	dy1 = y3 - y2;
-            //	dx1 = x3 - x2;
-            //	dw1 = w3 - w2;
-
-            //	if (dy1) dax_step = dx1 / (float)abs(dy1);
-            //	if (dy2) dbx_step = dx2 / (float)abs(dy2);
-
-            //	if (dy1) dw1_step = dw1 / (float)abs(dy1);
-
-            //	if (dy1)
-            //	{
-            //		for (int i = y2; i <= y3; i++)
-            //		{
-            //			int ax = x2 + (float)(i - y2) * dax_step;
-            //			int bx = x1 + (float)(i - y1) * dbx_step;
-
-            //			float tex_sw = w2 + (float)(i - y2) * dw1_step;
-
-            //			float tex_ew = w1 + (float)(i - y1) * dw2_step;
-
-            //			if (ax > bx)
-            //			{
-            //				swap(ax, bx);
-            //				swap(tex_sw, tex_ew);
-            //			}
-            //			// for each side of the row
-
-            //			if (tex_sw > pDepthBuffer[i * ScreenWidth() + ax])
-            //			{
-            //				Draw(ax, i, colour);
-            //				pDepthBuffer[i * ScreenWidth() + ax] = tex_sw;
-            //			}
-
-            //			if (tex_ew > pDepthBuffer[i * ScreenWidth() + bx])
-            //			{
-            //				Draw(bx, i, colour);
-            //				pDepthBuffer[i * ScreenWidth() + bx] = tex_ew;
-            //			}
-            //		}
-            //	}
-            //	// bottom is flat
-            //	else
-            //	{
-            //		if (x2 > x3)
-            //		{
-            //			swap(x2, x3);
-            //			swap(w2, w3);
-            //		}
-
-            //		tex_w = w2;
-
-            //		float tstep = 1.0f / ((float)(x3 - x2));
-            //		float t = 0.0f;
-
-            //		for (int j = x2; j < x3; j++)
-            //		{
-            //			tex_w = (1.0f - t) * w2 + t * w3;
-
-            //			if (tex_w > pDepthBuffer[y2 * ScreenWidth() + j])
-            //			{
-            //				Draw(j, y2, colour);
-            //				pDepthBuffer[y2 * ScreenWidth() + j] = tex_w;
-            //			}
-            //			t += tstep;
-            //		}
-            //	}
-            //}
 
         }
 
@@ -748,6 +608,8 @@ namespace _3DModeler
             public int Width { get; private set; }
 
             protected GCHandle BitsHandle { get; private set; }
+
+            public DirectBitmap() { }
 
             public DirectBitmap(int width, int height)
             {
@@ -793,7 +655,10 @@ namespace _3DModeler
             {
                 int index = x + (y * Width);
                 int col = color.ToArgb();
-
+                if (index >= Bits.Length)
+                {
+                    return;
+                }
                 Bits[index] = col;
             }
 
@@ -826,52 +691,33 @@ namespace _3DModeler
             Clock.Enabled = true;
             world = new View(Viewer.Width, Viewer.Height, 1, 1);
 
-            // creates the cube
-            //// SOUTH
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 0), new Vec3d(0, 1, 0), new Vec3d(1, 1, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 0), new Vec3d(1, 1, 0), new Vec3d(1, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            //// EAST
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 0), new Vec3d(1, 1, 0), new Vec3d(1, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 0), new Vec3d(1, 1, 1), new Vec3d(1, 0, 1), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            //// NORTH
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(1, 1, 1), new Vec3d(0, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 1, 1), new Vec3d(0, 0, 1), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            //// WEST
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 1), new Vec3d(0, 1, 1), new Vec3d(0, 1, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 0, 1), new Vec3d(0, 1, 0), new Vec3d(0, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            //// TOP
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 1, 0), new Vec3d(0, 1, 1), new Vec3d(1, 1, 1), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(0, 1, 0), new Vec3d(1, 1, 1), new Vec3d(1, 1, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
-            //// BOTTOM
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 0, 1), new Vec3d(0, 0, 0), new Vec2d(0, 1), new Vec2d(0, 0), new Vec2d(1, 0)));
-            //world.meshCube.tris.Add(new Triangle(new Vec3d(1, 0, 1), new Vec3d(0, 0, 0), new Vec3d(1, 0, 0), new Vec2d(0, 1), new Vec2d(1, 0), new Vec2d(1, 1)));
 
-            world.meshCube.LoadFromObjectFile("spyro_level.obj", true);
-            world.sprTex1 = new DirectBitmap("high.png");
-            // world.sprTex1.Bitmap.Save("yosh.png");
+            //meshCub
+
+
             // Setup Projection Matrix
             world.matProj = Matrix_MakeProjection(90.0f, (float)world.screenHeight / (float)world.screenWidth, 0.1f, 1000.0f);
         }
 
         private void Clock_Tick(object sender, EventArgs e)
         {
-            // https://github.com/OneLoneCoder/olcPixelGameEngine/blob/147c25a018c917030e59048b5920c269ef583c50/olcPixelGameEngine.h#L3823C8-L3823C8
+            // https://github.com/OneLoneCoder/olcPixelGameEngine/blob/147c25a018c917030e59048b5920c269ef583c50/olcPixelGameEngine.h#L3823
+            // Runs paint event. Renders frame
             tock = (float)sw.Elapsed.TotalSeconds;
             fElapsedTime = tock - tick;
-            tick = tock;
-            // sw.Restart();
-            Viewer.Refresh(); // Runs paint event. Renders frame
-            frameTime += fElapsedTime;
+            tick = tock;            
+            Viewer.Refresh();
             frames += 1;
+            frameTime += fElapsedTime;
             if (frameTime >= 1.0f)
             {
-                frameTime -= 1.0f;
                 FPS.Text = $"FPS: {frames}";
                 frames = 0;
-
+                frameTime -= 1; // Possibly change to set to 0
             }
             label1.Text = $"Frame: {frames}";
             label2.Text = $"ELapsed time: {sw.Elapsed.TotalSeconds}";
+            // sw.Restart();
         }
 
 
@@ -952,162 +798,6 @@ namespace _3DModeler
             // Construct the "Look At" matrix from the inverse
             Mat4x4 matView = Matrix_QuickInverse(ref matCamera);
 
-            // Store triangles for rastering later
-            List<Triangle> vecTrianglesToRaster = new List<Triangle>();
-
-            // Draw Triangles
-            // Note: tris are passed by reference here
-            foreach (Triangle tri in world.meshCube.tris)
-            {
-                Triangle triTransformed = new Triangle();
-                // World Matrix Transform
-                triTransformed.p[0] = Matrix_MultiplyVector(ref matWorld, ref tri.p[0]);
-                triTransformed.p[1] = Matrix_MultiplyVector(ref matWorld, ref tri.p[1]);
-                triTransformed.p[2] = Matrix_MultiplyVector(ref matWorld, ref tri.p[2]);
-                // texture information stays the same
-                triTransformed.t[0] = tri.t[0];
-                triTransformed.t[1] = tri.t[1];
-                triTransformed.t[2] = tri.t[2];
-
-
-                // Calculate triangle's Normal 
-                Vec3d normal = new Vec3d(), line1 = new Vec3d(), line2 = new Vec3d();
-
-                // Get lines on either side of triangle
-                line1 = Vector_Sub(ref triTransformed.p[1], ref triTransformed.p[0]);
-                line2 = Vector_Sub(ref triTransformed.p[2], ref triTransformed.p[0]);
-
-                // Take the cross product of lines to get normal to triangle surface
-                normal = Vector_CrossProduct(ref line1, ref line2);
-                normal = Vector_Normalize(ref normal);
-
-                // Get Ray from camera to triangle
-                Vec3d vCameraRay = Vector_Sub(ref triTransformed.p[0], ref world.vCamera);
-
-                // if ray is aligned with normal then triangle is visible
-                // if not it is culled
-                if (Vector_DotProduct(ref normal, ref vCameraRay) < 0.0f)
-                {
-                    // Illumination
-                    Vec3d light_direction = new Vec3d(0.0f, 1.0f, -1.0f);
-                    light_direction = Vector_Normalize(ref light_direction);
-
-                    // How "aligned" are light direction and triangle surface normal?
-                    float dp = MathF.Max(0.1f, Vector_DotProduct(ref light_direction, ref normal));
-
-                    // Choose triangle colours as required
-                    // The less the triangle normal and the light direction are aligned
-                    // the dimmer the triangle
-                    triTransformed.col = world.GetColour(dp);
-
-                    // convert World Space --> View Space
-                    Triangle triViewed = new Triangle();
-                    triViewed.p[0] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[0]);
-                    triViewed.p[1] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[1]);
-                    triViewed.p[2] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[2]);
-                    triViewed.col = triTransformed.col;
-                    // Texture information is still not updated
-                    triViewed.t[0] = triTransformed.t[0];
-                    triViewed.t[1] = triTransformed.t[1];
-                    triViewed.t[2] = triTransformed.t[2];
-
-
-                    // Clip the Viewed Triangle against near plane, this could form two additional
-                    // triangles.
-                    int nClippedTriangles = 0;
-                    Triangle[] clipped = new Triangle[2] { new Triangle(), new Triangle() };
-                    nClippedTriangles = world.Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.1f), new Vec3d(0.0f, 0.0f, 1.0f), ref triViewed, ref clipped[0], ref clipped[1]);
-
-                    // We may end up with multiple triangles form the clip, so project as
-                    // required
-                    for (int n = 0; n < nClippedTriangles; n++)
-                    {
-                        // Project triangles from 3D --> 2D
-                        // View space -> screen space
-                        Triangle triProjected = new Triangle();
-                        triProjected.p[0] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[0]);
-                        triProjected.p[1] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[1]);
-                        triProjected.p[2] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[2]);
-                        triProjected.col = clipped[n].col;
-                        triProjected.t[0] = clipped[n].t[0];
-                        triProjected.t[1] = clipped[n].t[1];
-                        triProjected.t[2] = clipped[n].t[2];
-
-                        // divide the texture coordinates by z-component to add perspective
-                        triProjected.t[0].u = triProjected.t[0].u / triProjected.p[0].w;
-                        triProjected.t[1].u = triProjected.t[1].u / triProjected.p[1].w;
-                        triProjected.t[2].u = triProjected.t[2].u / triProjected.p[2].w;
-
-                        triProjected.t[0].v = triProjected.t[0].v / triProjected.p[0].w;
-                        triProjected.t[1].v = triProjected.t[1].v / triProjected.p[1].w;
-                        triProjected.t[2].v = triProjected.t[2].v / triProjected.p[2].w;
-
-                        // set texel depth to be inverse so we can get the un-normalized coordinates 
-                        // back
-                        triProjected.t[0].w = 1.0f / triProjected.p[0].w;
-                        triProjected.t[1].w = 1.0f / triProjected.p[1].w;
-                        triProjected.t[2].w = 1.0f / triProjected.p[2].w;
-
-                        // each vertex is divided by the z-component to add perspective
-                        triProjected.p[0] = Vector_Div(ref triProjected.p[0], triProjected.p[0].w);
-                        triProjected.p[1] = Vector_Div(ref triProjected.p[1], triProjected.p[1].w);
-                        triProjected.p[2] = Vector_Div(ref triProjected.p[2], triProjected.p[2].w);
-
-                        // We must invert X because our system uses a left-hand coordinate system	
-                        triProjected.p[0].x *= -1.0f;
-                        triProjected.p[1].x *= -1.0f;
-                        triProjected.p[2].x *= -1.0f;
-                        // We must invert Y because pixels are drawn top down
-                        triProjected.p[0].y *= -1.0f;
-                        triProjected.p[1].y *= -1.0f;
-                        triProjected.p[2].y *= -1.0f;
-
-                        // Projection Matrix gives results from -1 to +1 through dividing by Z
-                        // So we offset vertices to fit on our screen that goes from 0 to height or width
-                        Vec3d vOffsetView = new Vec3d(1, 1, 0);
-                        triProjected.p[0] = Vector_Add(ref triProjected.p[0], ref vOffsetView);
-                        triProjected.p[1] = Vector_Add(ref triProjected.p[1], ref vOffsetView);
-                        triProjected.p[2] = Vector_Add(ref triProjected.p[2], ref vOffsetView);
-
-                        // verticies are now between 0 and 2 so we scale into viewable
-                        // screen height and width
-                        triProjected.p[0].x *= 0.5f * world.screenWidth;
-                        triProjected.p[0].y *= 0.5f * world.screenHeight;
-                        triProjected.p[1].x *= 0.5f * world.screenWidth;
-                        triProjected.p[1].y *= 0.5f * world.screenHeight;
-                        triProjected.p[2].x *= 0.5f * world.screenWidth;
-                        triProjected.p[2].y *= 0.5f * world.screenHeight;
-
-                        // Store triangle for sorting
-                        vecTrianglesToRaster.Add(triProjected);
-
-
-                    }
-                }
-            }
-
-            //Sort triangles from back to front
-            // An approximation of a triangle's Z position
-            // Causes problems if each vertex is far in terms of Z position
-            // Useful for transparency
-            //vecTrianglesToRaster.Sort((Triangle t1, Triangle t2) =>
-            //{
-            //    float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
-            //    float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
-            //    if (z2 - z1 > 0)
-            //    {
-            //        return 1;
-            //    }
-            //    else if (z1 - z2 == 0)
-            //    {
-            //        return 0;
-            //    }
-            //    else
-            //    {
-            //        return -1;
-            //    }
-            //});
-
 
 
             // Dispose of the screen bitmap each frame. Memory must be freed each time
@@ -1121,71 +811,233 @@ namespace _3DModeler
                 world.pDepthBuffer[i] = 0.0f;
             }
 
-
-            // Loop through all transformed, viewed, projected, and sorted triangles
-            foreach (Triangle triToRaster in vecTrianglesToRaster)
+            // Draw Triangles
+            // Note: tris are passed by reference here
+            foreach (Mesh mesh in meshes)
             {
-                // Clip triangles against all four screen edges, this could yield
-                // a bunch of triangles, so create a queue that we traverse to 
-                //  ensure we only test new triangles generated against planes
-                Triangle[] clipped = new Triangle[2] { new Triangle(), new Triangle() };
-                Queue<Triangle> listTriangles = new Queue<Triangle>();
+                // Store triangles for rastering later
+                List<Triangle> vecTrianglesToRaster = new List<Triangle>();
 
-                // Add initial triangle
-                listTriangles.Enqueue(triToRaster);
-                int nNewTriangles = 1;
-
-                for (int p = 0; p < 4; p++)
+                foreach (Triangle tri in mesh.tris)
                 {
-                    int nTrisToAdd = 0;
-                    while (nNewTriangles > 0)
+                    Triangle triTransformed = new Triangle();
+                    // World Matrix Transform
+                    triTransformed.p[0] = Matrix_MultiplyVector(ref matWorld, ref tri.p[0]);
+                    triTransformed.p[1] = Matrix_MultiplyVector(ref matWorld, ref tri.p[1]);
+                    triTransformed.p[2] = Matrix_MultiplyVector(ref matWorld, ref tri.p[2]);
+                    // texture information stays the same
+                    triTransformed.t[0] = tri.t[0];
+                    triTransformed.t[1] = tri.t[1];
+                    triTransformed.t[2] = tri.t[2];
+
+
+                    // Calculate triangle's Normal 
+                    Vec3d normal = new Vec3d(), line1 = new Vec3d(), line2 = new Vec3d();
+
+                    // Get lines on either side of triangle
+                    line1 = Vector_Sub(ref triTransformed.p[1], ref triTransformed.p[0]);
+                    line2 = Vector_Sub(ref triTransformed.p[2], ref triTransformed.p[0]);
+
+                    // Take the cross product of lines to get normal to triangle surface
+                    normal = Vector_CrossProduct(ref line1, ref line2);
+                    normal = Vector_Normalize(ref normal);
+
+                    // Get Ray from camera to triangle
+                    Vec3d vCameraRay = Vector_Sub(ref triTransformed.p[0], ref world.vCamera);
+
+                    // if ray is aligned with normal then triangle is visible
+                    // if not it is culled
+                    if (Vector_DotProduct(ref normal, ref vCameraRay) < 0.0f)
                     {
-                        // Take triangle from front of queue
-                        Triangle test = listTriangles.Dequeue();
-                        nNewTriangles--;
+                        // Illumination
+                        Vec3d light_direction = new Vec3d(0.0f, 1.0f, -1.0f);
+                        light_direction = Vector_Normalize(ref light_direction);
 
-                        // Clip it against a plane. We only need to test each 
-                        // subsequent plane, against subsequent new triangles
-                        // as all triangles after a plane clip are guaranteed
-                        // to lie on the inside of the plane.
-                        switch (p)
+                        // How "aligned" are light direction and triangle surface normal?
+                        float dp = MathF.Max(0.1f, Vector_DotProduct(ref light_direction, ref normal));
+
+                        // Choose triangle colours as required
+                        // The less the triangle normal and the light direction are aligned
+                        // the dimmer the triangle
+                        triTransformed.col = world.GetColour(dp);
+
+                        // convert World Space --> View Space
+                        Triangle triViewed = new Triangle();
+                        triViewed.p[0] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[0]);
+                        triViewed.p[1] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[1]);
+                        triViewed.p[2] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[2]);
+                        triViewed.col = triTransformed.col;
+                        // Texture information is still not updated
+                        triViewed.t[0] = triTransformed.t[0];
+                        triViewed.t[1] = triTransformed.t[1];
+                        triViewed.t[2] = triTransformed.t[2];
+
+
+                        // Clip the Viewed Triangle against near plane, this could form two additional
+                        // triangles.
+                        int nClippedTriangles = 0;
+                        Triangle[] clipped = new Triangle[2] { new Triangle(), new Triangle() };
+                        nClippedTriangles = world.Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.1f), new Vec3d(0.0f, 0.0f, 1.0f), ref triViewed, ref clipped[0], ref clipped[1]);
+
+                        // We may end up with multiple triangles form the clip, so project as
+                        // required
+                        for (int n = 0; n < nClippedTriangles; n++)
                         {
-                            case 0:
-                                nTrisToAdd = world.Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(0.0f, 1.0f, 0.0f), ref test, ref clipped[0], ref clipped[1]);
-                                break;
-                            case 1:
-                                nTrisToAdd = world.Triangle_ClipAgainstPlane(new Vec3d(0.0f, (float)world.screenHeight - 1, 0.0f), new Vec3d(0.0f, -1.0f, 0.0f), ref test, ref clipped[0], ref clipped[1]);
-                                break;
-                            case 2:
-                                nTrisToAdd = world.Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f), ref test, ref clipped[0], ref clipped[1]);
-                                break;
-                            case 3:
-                                nTrisToAdd = world.Triangle_ClipAgainstPlane(new Vec3d((float)world.screenWidth - 1, 0.0f, 0.0f), new Vec3d(-1.0f, 0.0f, 0.0f), ref test, ref clipped[0], ref clipped[1]);
-                                break;
-                        }
+                            // Project triangles from 3D --> 2D
+                            // View space -> screen space
+                            Triangle triProjected = new Triangle();
+                            triProjected.p[0] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[0]);
+                            triProjected.p[1] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[1]);
+                            triProjected.p[2] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[2]);
+                            triProjected.col = clipped[n].col;
+                            triProjected.t[0] = clipped[n].t[0];
+                            triProjected.t[1] = clipped[n].t[1];
+                            triProjected.t[2] = clipped[n].t[2];
 
-                        // Clipping may yield a variable number of triangles, so
-                        // add these new ones to the back of the queue for subsequent
-                        // clipping against next planes
-                        for (int w = 0; w < nTrisToAdd; w++)
-                            listTriangles.Enqueue(new Triangle(ref clipped[w]));
+                            // divide the texture coordinates by z-component to add perspective
+                            triProjected.t[0].u = triProjected.t[0].u / triProjected.p[0].w;
+                            triProjected.t[1].u = triProjected.t[1].u / triProjected.p[1].w;
+                            triProjected.t[2].u = triProjected.t[2].u / triProjected.p[2].w;
+
+                            triProjected.t[0].v = triProjected.t[0].v / triProjected.p[0].w;
+                            triProjected.t[1].v = triProjected.t[1].v / triProjected.p[1].w;
+                            triProjected.t[2].v = triProjected.t[2].v / triProjected.p[2].w;
+
+                            // set texel depth to be inverse so we can get the un-normalized coordinates 
+                            // back
+                            triProjected.t[0].w = 1.0f / triProjected.p[0].w;
+                            triProjected.t[1].w = 1.0f / triProjected.p[1].w;
+                            triProjected.t[2].w = 1.0f / triProjected.p[2].w;
+
+                            // each vertex is divided by the z-component to add perspective
+                            triProjected.p[0] = Vector_Div(ref triProjected.p[0], triProjected.p[0].w);
+                            triProjected.p[1] = Vector_Div(ref triProjected.p[1], triProjected.p[1].w);
+                            triProjected.p[2] = Vector_Div(ref triProjected.p[2], triProjected.p[2].w);
+
+                            // We must invert X because our system uses a left-hand coordinate system	
+                            triProjected.p[0].x *= -1.0f;
+                            triProjected.p[1].x *= -1.0f;
+                            triProjected.p[2].x *= -1.0f;
+                            // We must invert Y because pixels are drawn top down
+                            triProjected.p[0].y *= -1.0f;
+                            triProjected.p[1].y *= -1.0f;
+                            triProjected.p[2].y *= -1.0f;
+
+                            // Projection Matrix gives results from -1 to +1 through dividing by Z
+                            // So we offset vertices to fit on our screen that goes from 0 to height or width
+                            Vec3d vOffsetView = new Vec3d(1, 1, 0);
+                            triProjected.p[0] = Vector_Add(ref triProjected.p[0], ref vOffsetView);
+                            triProjected.p[1] = Vector_Add(ref triProjected.p[1], ref vOffsetView);
+                            triProjected.p[2] = Vector_Add(ref triProjected.p[2], ref vOffsetView);
+
+                            // verticies are now between 0 and 2 so we scale into viewable
+                            // screen height and width
+                            triProjected.p[0].x *= 0.5f * world.screenWidth;
+                            triProjected.p[0].y *= 0.5f * world.screenHeight;
+                            triProjected.p[1].x *= 0.5f * world.screenWidth;
+                            triProjected.p[1].y *= 0.5f * world.screenHeight;
+                            triProjected.p[2].x *= 0.5f * world.screenWidth;
+                            triProjected.p[2].y *= 0.5f * world.screenHeight;
+
+                            // Store triangle for sorting
+                            vecTrianglesToRaster.Add(triProjected);
+
+
+                        }
                     }
-                    nNewTriangles = listTriangles.Count();
                 }
 
+                //Sort triangles from back to front
+                // An approximation of a triangle's Z position
+                // Causes problems if each vertex is far in terms of Z position
+                // Useful for transparency
+                //vecTrianglesToRaster.Sort((Triangle t1, Triangle t2) =>
+                //{
+                //    float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
+                //    float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
+                //    if (z2 - z1 > 0)
+                //    {
+                //        return 1;
+                //    }
+                //    else if (z1 - z2 == 0)
+                //    {
+                //        return 0;
+                //    }
+                //    else
+                //    {
+                //        return -1;
+                //    }
+                //});
 
-                // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles to a bitmap
-                foreach (Triangle t in listTriangles)
+
+                // Loop through all transformed, viewed, projected, and sorted triangles
+                foreach (Triangle triToRaster in vecTrianglesToRaster)
                 {
-                    world.ConstructBitmap((int)t.p[0].x, (int)t.p[0].y, t.t[0].u, t.t[0].v, t.t[0].w,
-                        (int)t.p[1].x, (int)t.p[1].y, t.t[1].u, t.t[1].v, t.t[1].w,
-                        (int)t.p[2].x, (int)t.p[2].y, t.t[2].u, t.t[2].v, t.t[2].w, t.col.ToArgb(), true);
+                    // Clip triangles against all four screen edges, this could yield
+                    // a bunch of triangles, so create a queue that we traverse to 
+                    //  ensure we only test new triangles generated against planes
+                    Triangle[] clipped = new Triangle[2] { new Triangle(), new Triangle() };
+                    Queue<Triangle> listTriangles = new Queue<Triangle>();
 
-                    // world.e.Graphics.DrawLine(new Pen(Color.Black), t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y);
-                    // world.e.Graphics.DrawLine(new Pen(Color.Black), t.p[0].x, t.p[0].y, t.p[2].x, t.p[2].y);
-                    // world.e.Graphics.DrawLine(new Pen(Color.Black), t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y);
+                    // Add initial triangle
+                    listTriangles.Enqueue(triToRaster);
+                    int nNewTriangles = 1;
+
+                    for (int p = 0; p < 4; p++)
+                    {
+                        int nTrisToAdd = 0;
+                        while (nNewTriangles > 0)
+                        {
+                            // Take triangle from front of queue
+                            Triangle test = listTriangles.Dequeue();
+                            nNewTriangles--;
+
+                            // Clip it against a plane. We only need to test each 
+                            // subsequent plane, against subsequent new triangles
+                            // as all triangles after a plane clip are guaranteed
+                            // to lie on the inside of the plane.
+                            switch (p)
+                            {
+                                case 0:
+                                    nTrisToAdd = world.Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(0.0f, 1.0f, 0.0f), ref test, ref clipped[0], ref clipped[1]);
+                                    break;
+                                case 1:
+                                    nTrisToAdd = world.Triangle_ClipAgainstPlane(new Vec3d(0.0f, (float)world.screenHeight - 1, 0.0f), new Vec3d(0.0f, -1.0f, 0.0f), ref test, ref clipped[0], ref clipped[1]);
+                                    break;
+                                case 2:
+                                    nTrisToAdd = world.Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f), ref test, ref clipped[0], ref clipped[1]);
+                                    break;
+                                case 3:
+                                    nTrisToAdd = world.Triangle_ClipAgainstPlane(new Vec3d((float)world.screenWidth - 1, 0.0f, 0.0f), new Vec3d(-1.0f, 0.0f, 0.0f), ref test, ref clipped[0], ref clipped[1]);
+                                    break;
+                            }
+
+                            // Clipping may yield a variable number of triangles, so
+                            // add these new ones to the back of the queue for subsequent
+                            // clipping against next planes
+                            for (int w = 0; w < nTrisToAdd; w++)
+                                listTriangles.Enqueue(new Triangle(ref clipped[w]));
+                        }
+                        nNewTriangles = listTriangles.Count();
+                    }
+
+
+                    // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles to a bitmap
+                    foreach (Triangle t in listTriangles)
+                    {
+                        world.ConstructBitmap((int)t.p[0].x, (int)t.p[0].y, t.t[0].u, t.t[0].v, t.t[0].w,
+                            (int)t.p[1].x, (int)t.p[1].y, t.t[1].u, t.t[1].v, t.t[1].w,
+                            (int)t.p[2].x, (int)t.p[2].y, t.t[2].u, t.t[2].v, t.t[2].w, mesh.Texture, t.col.ToArgb(), mesh.hasTexture);
+
+                        //DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[1].x, (int)t.p[1].y, world.screen, Color.Black);
+                        //DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[2].x, (int)t.p[2].y, world.screen, Color.Black);
+                        //DrawLine((int)t.p[1].x, (int)t.p[1].y, (int)t.p[2].x, (int)t.p[2].y, world.screen, Color.Black);
+
+                    }
                 }
             }
+
+
             // Draw the bitmap to the screen
             e.Graphics.DrawImage(world.screen.Bitmap, 0, 0, world.pixelWidth * world.screenWidth, world.pixelHeight * world.screenHeight);
         }
@@ -1198,6 +1050,101 @@ namespace _3DModeler
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
             keyPressed[e.KeyCode] = false;
+        }
+
+        //https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C#
+        private void DrawLine(int x0, int y0, int x1, int y1, DirectBitmap bitmap, Color color)
+        {
+            int dx = Math.Abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+            int dy = Math.Abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+            int err = (dx > dy ? dx : -dy) / 2, e2;
+            for (; ; )
+            {
+                bitmap.SetPixel(x0, y0, color);
+                if (x0 == x1 && y0 == y1) break;
+                e2 = err;
+                if (e2 > -dx) { err -= dy; x0 += sx; }
+                if (e2 < dy) { err += dx; y0 += sy; }
+            }
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "All files (*.*)|*.*|obj files (*.obj)|*.obj";
+                openFileDialog.FilterIndex = 2;
+                openFileDialog.RestoreDirectory = false;
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    meshes.Clear();
+
+                    //Get the path of specified file
+                    string filePath = openFileDialog.FileName;
+                    string[] subPaths = filePath.Split('\\');
+                    string folderPath = String.Join("\\", subPaths.SkipLast(1).ToArray());
+                    string materialName = "";
+                    string texturePath = "";
+                    bool hasMaterial = false;
+                    bool hasTexture = false;
+                    Mesh meshCube = new Mesh();
+                    meshCube.LoadObjectFromFile(filePath, ref materialName, ref hasMaterial);
+                    if (hasMaterial)
+                    {
+                        string materialPath = Path.Combine(folderPath, materialName);
+                        meshCube.LoadMaterialFromFile(materialPath, ref texturePath, ref hasTexture);
+                        if (hasTexture)
+                        {
+                            texturePath = texturePath.Replace("/", "\\");
+                            meshCube.LoadTextureFromFile(texturePath);
+                            meshCube.hasTexture = true;
+
+                        }
+                    }
+                    else
+                    {
+                        meshCube.hasTexture = false;
+                    }
+                    meshes.Add(meshCube);
+                }
+            }
+        }
+
+        private void AddCube_Click(object sender, EventArgs e)
+        {
+            // creates the cube
+            Vec3d[] points = new Vec3d[8];
+            Mesh cube = new Mesh();
+            for (int i = 0; i < 8; i++)
+            {
+                points[i] = new Vec3d(i / 4, (i / 2) % 2, i % 2);
+            }
+
+            List<Triangle> tris = new List<Triangle>
+            {
+                new Triangle(new Vec3d[] { points[1], points[3], points[2] }),
+                 new Triangle(new Vec3d[] { points[1], points[2], points[0] }),
+                  new Triangle(new Vec3d[] { points[0], points[2], points[6] }),
+                  new Triangle(new Vec3d[] { points[0], points[6], points[4] }),
+                  new Triangle(new Vec3d[] { points[1], points[0], points[4] }),
+                  new Triangle(new Vec3d[] { points[1], points[4], points[5] }),
+                  new Triangle(new Vec3d[] { points[4], points[6], points[7] }),
+                  new Triangle(new Vec3d[] { points[4], points[7], points[5] }),
+                  new Triangle(new Vec3d[] { points[2], points[3], points[7] }),
+                  new Triangle(new Vec3d[] { points[2], points[7], points[6] }),
+                  new Triangle(new Vec3d[] { points[5], points[7], points[3] }),
+                  new Triangle(new Vec3d[] { points[5], points[3], points[1] }),
+            };
+            cube.tris = tris;
+            meshes.Add(cube);
+        }
+
+        // Necessary for keydown event to trigger for arrow keys
+        private void AddCube_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            e.IsInputKey = true;
         }
     }
 }
