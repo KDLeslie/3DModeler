@@ -27,6 +27,13 @@ namespace _3DModeler
                 this.v = vec2D.v;
                 this.w = vec2D.w;
             }
+            public bool Equals(Vec2d p)
+            {
+                // Return true if the fields match.
+                // Note that the base class is not invoked because it is
+                // System.Object, which defines Equals as reference equality.
+                return this.u == p.u && this.v == p.v;
+            }
             public float u = 0;
             public float v = 0;
             public float w = 1; // Keeps track of the depth of each texture coordinate
@@ -51,6 +58,14 @@ namespace _3DModeler
                 this.y = vec3D.y;
                 this.z = vec3D.z;
             }
+            public bool Equals(Vec3d p)
+            {
+                // Return true if the fields match.
+                // Note that the base class is not invoked because it is
+                // System.Object, which defines Equals as reference equality.
+                return this.x == p.x && this.y == p.y && this.z == p.z;
+            }
+
             public float x = 0;
             public float y = 0;
             public float z = 0;

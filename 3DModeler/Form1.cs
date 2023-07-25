@@ -16,7 +16,7 @@ namespace _3DModeler
 {
     public partial class Form1 : Form
     {
-        readonly Stopwatch sw = new Stopwatch();
+        readonly Stopwatch stopWatch = new Stopwatch();
         public Form1()
         {
             InitializeComponent();
@@ -73,6 +73,7 @@ namespace _3DModeler
                     this.t[i] = t[i];
                 }
             }
+
             public Vec3d[] p = new Vec3d[3];  // Stores vertex coordinates for each triangle
             public Vec2d[] t = new Vec2d[3]; // Stores texel coordinates for each triangle
             public Color col = new Color();  // Used for the shading of each triangle
@@ -221,6 +222,9 @@ namespace _3DModeler
 
         class View
         {
+            public View()
+            { 
+            }
             public View(int screenWidth, int screenHeight, int pixelWidth, int pixelHeight)
             {
                 this.screenWidth = screenWidth / pixelWidth;
@@ -229,7 +233,6 @@ namespace _3DModeler
                 this.pixelHeight = pixelHeight;
                 this.pDepthBuffer = new float[screenWidth * screenHeight];
             }
-            // public Mesh meshCube = new Mesh();
             public Mat4x4 matProj = new Mat4x4(); // Matrix that converts from view space to screen space
             public Vec3d vCamera = new Vec3d(); // Location of camera in world space
             public Vec3d vLookDir = new Vec3d(); // Direction vector along the direction camera points
@@ -240,7 +243,7 @@ namespace _3DModeler
             public int screenHeight { get; set; }
             public int pixelWidth { get; set; }
             public int pixelHeight { get; set; }
-            public float[] pDepthBuffer { get; set; }
+            public float[] pDepthBuffer { get; set; } = new float[1];
             public DirectBitmap screen = new DirectBitmap(1, 1); // A bitmap representing the frame drawn to the picturebox
 
             public int Triangle_ClipAgainstPlane(Vec3d plane_p, Vec3d plane_n, ref Triangle in_tri, ref Triangle out_tri1, ref Triangle out_tri2)
@@ -686,15 +689,10 @@ namespace _3DModeler
         private void Form1_Load(object sender, EventArgs e)
         {
             // this.DoubleBuffered = true; // may not be needed since picturebox is already double buffered
-            sw.Start();
+            stopWatch.Start();
             Clock.Interval = 20;
             Clock.Enabled = true;
             world = new View(Viewer.Width, Viewer.Height, 1, 1);
-
-
-            //meshCub
-
-
             // Setup Projection Matrix
             world.matProj = Matrix_MakeProjection(90.0f, (float)world.screenHeight / (float)world.screenWidth, 0.1f, 1000.0f);
         }
@@ -703,9 +701,9 @@ namespace _3DModeler
         {
             // https://github.com/OneLoneCoder/olcPixelGameEngine/blob/147c25a018c917030e59048b5920c269ef583c50/olcPixelGameEngine.h#L3823
             // Runs paint event. Renders frame
-            tock = (float)sw.Elapsed.TotalSeconds;
+            tock = (float)stopWatch.Elapsed.TotalSeconds;
             fElapsedTime = tock - tick;
-            tick = tock;            
+            tick = tock;
             Viewer.Refresh();
             frames += 1;
             frameTime += fElapsedTime;
@@ -716,7 +714,7 @@ namespace _3DModeler
                 frameTime -= 1; // Possibly change to set to 0
             }
             label1.Text = $"Frame: {frames}";
-            label2.Text = $"ELapsed time: {sw.Elapsed.TotalSeconds}";
+            label2.Text = $"ELapsed time: {stopWatch.Elapsed.TotalSeconds}";
             // sw.Restart();
         }
 
@@ -783,7 +781,7 @@ namespace _3DModeler
             Vec3d vForwardCam = new Vec3d(0, 0, 1); // Default forward direction for our camera is along the positive z-axis
             // Cap pitch from being able to rotate too far.
             // TODO: Fix this
-            world.fPitch = world.fPitch > 0 ? MathF.Min(MathF.PI / 2, world.fPitch) : MathF.Max(-MathF.PI / 2, world.fPitch);
+            world.fPitch = world.fPitch > 0 ? MathF.Min(3.1415f / 2, world.fPitch) : MathF.Max(-3.1415f / 2, world.fPitch);
             Mat4x4 matCameraRot = Matrix_MakeIdentity();
             Mat4x4 matCameraRot_X = Matrix_MakeRotationX(world.fPitch);
             Mat4x4 matCameraRot_Y = Matrix_MakeRotationY(world.fYaw);
@@ -847,6 +845,9 @@ namespace _3DModeler
 
                     // if ray is aligned with normal then triangle is visible
                     // if not it is culled
+                    // right now this means triangles on the other side of an object we won't see
+                    // so if we could see through one side of the object, we wouldn't the inside of the
+                    // other side as it'd be culled. Note, Make toggleable
                     if (Vector_DotProduct(ref normal, ref vCameraRay) < 0.0f)
                     {
                         // Illumination
@@ -930,7 +931,7 @@ namespace _3DModeler
                             triProjected.p[1] = Vector_Add(ref triProjected.p[1], ref vOffsetView);
                             triProjected.p[2] = Vector_Add(ref triProjected.p[2], ref vOffsetView);
 
-                            // verticies are now between 0 and 2 so we scale into viewable
+                            // vertices are now between 0 and 2 so we scale into viewable
                             // screen height and width
                             triProjected.p[0].x *= 0.5f * world.screenWidth;
                             triProjected.p[0].y *= 0.5f * world.screenHeight;
@@ -1029,6 +1030,9 @@ namespace _3DModeler
                             (int)t.p[1].x, (int)t.p[1].y, t.t[1].u, t.t[1].v, t.t[1].w,
                             (int)t.p[2].x, (int)t.p[2].y, t.t[2].u, t.t[2].v, t.t[2].w, mesh.Texture, t.col.ToArgb(), mesh.hasTexture);
 
+
+                        //// Handles wireframe. No depth buffer currently emulated for wireframe so you can see
+                        //// it through triangles
                         //DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[1].x, (int)t.p[1].y, world.screen, Color.Black);
                         //DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[2].x, (int)t.p[2].y, world.screen, Color.Black);
                         //DrawLine((int)t.p[1].x, (int)t.p[1].y, (int)t.p[2].x, (int)t.p[2].y, world.screen, Color.Black);
@@ -1145,6 +1149,74 @@ namespace _3DModeler
         private void AddCube_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             e.IsInputKey = true;
+        }
+
+        private void saveASToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if(meshes.Count != 0) 
+            {
+                Stream myStream;
+                SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+
+                saveFileDialog1.Filter = "obj files (*.obj)|*.obj|All files (*.*)|*.*";
+                saveFileDialog1.FilterIndex = 2;
+                saveFileDialog1.RestoreDirectory = false;
+
+
+                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+                {
+                    using (StreamWriter outputFile = new StreamWriter(saveFileDialog1.OpenFile()))
+                    {
+                        outputFile.WriteLine("# test");
+                        foreach (Mesh mesh in meshes)
+                        {
+                            Dictionary<Vec3d, int> vertices = new Dictionary<Vec3d, int>();
+                            List<int[]> faces = new List<int[]>();
+                            int index = 1;
+
+                            foreach(Triangle tri in mesh.tris)
+                            {
+                                int[] face = new int[3]; 
+
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    if (vertices.ContainsKey(tri.p[i]))
+                                    {
+                                        face[i] = vertices[tri.p[i]];
+                                    }
+                                    else
+                                    {
+                                        vertices[tri.p[i]] = index;
+                                        face[i] = index++;
+                                    }
+                                }
+                                faces.Add(face);                                
+                            }
+                            foreach (KeyValuePair<Vec3d, int> vertex in vertices)
+                            {
+                                string output = $"v {vertex.Key.x:f6} {vertex.Key.y:f6} {vertex.Key.z:f6}";
+                                outputFile.WriteLine(output);
+                            }
+                            foreach (int[] face in faces)
+                            {
+                                string output = $"f {face[0]} {face[1]} {face[2]}";
+                                outputFile.WriteLine(output);
+                            }
+
+                        }
+                      
+
+                    }
+                    MessageBox.Show("Save complete");
+
+                }
+
+
+            }
+            else
+            {
+                MessageBox.Show("Nothing to save");
+            }
         }
     }
 }
