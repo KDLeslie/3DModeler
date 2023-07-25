@@ -58,6 +58,67 @@ namespace _3DModeler
                 this.y = vec3D.y;
                 this.z = vec3D.z;
             }
+            public static Vec3d operator +(Vec3d lhs, Vec3d rhs)
+            {
+                Vec3d vec3D = new Vec3d
+                {
+                    x = lhs.x + rhs.x,
+                    y = lhs.y + rhs.y,
+                    z = lhs.z + rhs.z
+                };
+                return vec3D;
+            }
+            public static Vec3d operator +(Vec3d lhs, float rhs)
+            {
+                Vec3d vec3D = new Vec3d
+                {
+                    x = lhs.x + rhs,
+                    y = lhs.y + rhs,
+                    z = lhs.z + rhs
+                };
+                return vec3D;
+            }
+            public static Vec3d operator -(Vec3d lhs, Vec3d rhs)
+            {
+                Vec3d vec3D = new Vec3d
+                {
+                    x = lhs.x - rhs.x,
+                    y = lhs.y - rhs.y,
+                    z = lhs.z - rhs.z
+                };
+                return vec3D;
+            }
+            public static Vec3d operator -(Vec3d lhs, float rhs)
+            {
+                Vec3d vec3D = new Vec3d
+                {
+                    x = lhs.x - rhs,
+                    y = lhs.y - rhs,
+                    z = lhs.z - rhs
+                };
+                return vec3D;
+            }
+            public static Vec3d operator *(Vec3d lhs, float rhs)
+            {
+                Vec3d vec3D = new Vec3d
+                {
+                    x = lhs.x * rhs,
+                    y = lhs.y * rhs,
+                    z = lhs.z * rhs
+                };
+                return vec3D;
+            }
+            public static Vec3d operator /(Vec3d lhs, float rhs)
+            {
+                Vec3d vec3D = new Vec3d
+                {
+                    x = lhs.x / rhs,
+                    y = lhs.y / rhs,
+                    z = lhs.z / rhs
+                };
+                return vec3D;
+            }
+            
             public bool Equals(Vec3d p)
             {
                 // Return true if the fields match.
@@ -74,24 +135,31 @@ namespace _3DModeler
 
         public struct Mat4x4
         {
-            public Mat4x4()
+            public Mat4x4() { }
+            public static Vec3d operator *(Mat4x4 lhs, Vec3d rhs)
             {
+                Vec3d v = new Vec3d
+                {
+                    x = rhs.x * lhs.m[0, 0] + rhs.y * lhs.m[1, 0] + rhs.z * lhs.m[2, 0] + rhs.w * lhs.m[3, 0],
+                    y = rhs.x * lhs.m[0, 1] + rhs.y * lhs.m[1, 1] + rhs.z * lhs.m[2, 1] + rhs.w * lhs.m[3, 1],
+                    z = rhs.x * lhs.m[0, 2] + rhs.y * lhs.m[1, 2] + rhs.z * lhs.m[2, 2] + rhs.w * lhs.m[3, 2],
+                    w = rhs.x * lhs.m[0, 3] + rhs.y * lhs.m[1, 3] + rhs.z * lhs.m[2, 3] + rhs.w * lhs.m[3, 3]
+                };
+                return v;
             }
+            public static Mat4x4 operator *(Mat4x4 lhs, Mat4x4 rhs)
+            {
+                Mat4x4 matrix = new Mat4x4();
+                for (int c = 0; c < 4; c++)
+                    for (int r = 0; r < 4; r++)
+                        matrix.m[r, c] = lhs.m[r, 0] * rhs.m[0, c] + lhs.m[r, 1] * rhs.m[1, c] + lhs.m[r, 2] * rhs.m[2, c] + lhs.m[r, 3] * rhs.m[3, c];
+                return matrix;
+            }
+
 
             public float[,] m = new float[4, 4];
         }
 
-        public static Vec3d Matrix_MultiplyVector(ref Mat4x4 m, ref Vec3d i)
-        {
-            Vec3d v = new Vec3d
-            {
-                x = i.x * m.m[0, 0] + i.y * m.m[1, 0] + i.z * m.m[2, 0] + i.w * m.m[3, 0],
-                y = i.x * m.m[0, 1] + i.y * m.m[1, 1] + i.z * m.m[2, 1] + i.w * m.m[3, 1],
-                z = i.x * m.m[0, 2] + i.y * m.m[1, 2] + i.z * m.m[2, 2] + i.w * m.m[3, 2],
-                w = i.x * m.m[0, 3] + i.y * m.m[1, 3] + i.z * m.m[2, 3] + i.w * m.m[3, 3]
-            };
-            return v;
-        }
         public static Mat4x4 Matrix_MakeIdentity()
         {
             Mat4x4 matrix = new Mat4x4();
@@ -167,24 +235,15 @@ namespace _3DModeler
             return matrix;
         }
 
-        public static Mat4x4 Matrix_MultiplyMatrix(ref Mat4x4 m1, ref Mat4x4 m2)
-        {
-            Mat4x4 matrix = new Mat4x4();
-            for (int c = 0; c < 4; c++)
-                for (int r = 0; r < 4; r++)
-                    matrix.m[r,c] = m1.m[r,0] * m2.m[0,c] + m1.m[r,1] * m2.m[1,c] + m1.m[r,2] * m2.m[2,c] + m1.m[r,3] * m2.m[3,c];
-            return matrix;
-        }
-
         public static Mat4x4 Matrix_PointAt(ref Vec3d pos, ref Vec3d target, ref Vec3d up)
         {
             // calculate new forward direction
-            Vec3d newForward = Vector_Sub(ref target, ref pos);
+            Vec3d newForward = target - pos;
             newForward = Vector_Normalize(ref newForward);
 
             // Calculate new Up direction incase foward vector has a y-component
-            Vec3d a = Vector_Mul(ref newForward, Vector_DotProduct(ref up, ref newForward));
-            Vec3d newUp = Vector_Sub(ref up, ref a);
+            Vec3d a = newForward * Vector_DotProduct(ref up, ref newForward);
+            Vec3d newUp = up - a;
             newUp = Vector_Normalize(ref newUp);
 
             // New Right direction is easy, its just cross product
@@ -211,52 +270,6 @@ namespace _3DModeler
             matrix.m[3,3] = 1.0f;
             return matrix;
         }
-
-
-        public static Vec3d Vector_Add(ref Vec3d v1, ref Vec3d v2)
-        {
-            Vec3d vec3D = new Vec3d
-            {
-                x = v1.x + v2.x,
-                y = v1.y + v2.y,
-                z = v1.z + v2.z
-            };
-            return vec3D;
-        }
-
-        public static Vec3d Vector_Sub(ref Vec3d v1, ref Vec3d v2)
-        {
-            Vec3d vec3D = new Vec3d
-            {
-                x = v1.x - v2.x,
-                y = v1.y - v2.y,
-                z = v1.z - v2.z
-            };
-            return vec3D;
-        }
-
-        public static  Vec3d Vector_Mul(ref Vec3d v1, float k)
-        {
-            Vec3d vec3D = new Vec3d
-            {
-                x = v1.x * k,
-                y = v1.y * k,
-                z = v1.z * k
-            };
-            return vec3D;
-        }
-
-        public static Vec3d Vector_Div(ref Vec3d v1, float k)
-        {
-            Vec3d vec3D = new Vec3d
-            {
-                x = v1.x / k, 
-                y = v1.y / k, 
-                z = v1.z / k 
-            };
-            return vec3D;
-        }
-
         public static float Vector_DotProduct(ref Vec3d v1, ref Vec3d v2)
         {
             return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
@@ -296,9 +309,9 @@ namespace _3DModeler
             float ad = Vector_DotProduct(ref lineStart, ref plane_n);
             float bd = Vector_DotProduct(ref lineEnd, ref plane_n);
             t = (-plane_d - ad) / (bd - ad);
-            Vec3d lineStartToEnd = Vector_Sub(ref lineEnd, ref lineStart);
-            Vec3d lineToIntersect = Vector_Mul(ref lineStartToEnd, t);
-            return Vector_Add(ref lineStart, ref lineToIntersect);
+            Vec3d lineStartToEnd = lineEnd - lineStart;
+            Vec3d lineToIntersect = lineStartToEnd * t;
+            return lineStart + lineToIntersect;
         }
 
     }

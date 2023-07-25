@@ -736,14 +736,14 @@ namespace _3DModeler
                 world.vCamera.x += 8.0f * fElapsedTime;   // Travel along negative x-axis
 
             // A velocity vector used to control the forward movement of the camera
-            Vec3d vVelocity = Vector_Mul(ref world.vLookDir, 8.0f * fElapsedTime);
+            Vec3d vVelocity = world.vLookDir * (8.0f * fElapsedTime);
 
             // Standard FPS Control scheme, but turn instead of strafe
             if (keyPressed[Keys.W])
-                world.vCamera = Vector_Add(ref world.vCamera, ref vVelocity);
+                world.vCamera = world.vCamera + vVelocity;
 
             if (keyPressed[Keys.S])
-                world.vCamera = Vector_Sub(ref world.vCamera, ref vVelocity);
+                world.vCamera = world.vCamera - vVelocity;
 
             if (keyPressed[Keys.A])
                 world.fYaw -= 2.0f * fElapsedTime;
@@ -773,8 +773,8 @@ namespace _3DModeler
 
             Mat4x4 matWorld;
             matWorld = Matrix_MakeIdentity(); // Form World Matrix
-            matWorld = Matrix_MultiplyMatrix(ref matRotZ, ref matRotX); // Transform by rotation
-            matWorld = Matrix_MultiplyMatrix(ref matWorld, ref matTrans); // Transform by translation
+            matWorld =  matRotZ * matRotX; // Transform by rotation
+            matWorld = matWorld * matTrans; // Transform by translation
 
             // Create "Point At" Matrix for camera
             Vec3d vUp = new Vec3d(0, 1, 0); // Default up direction for the camera is along the positive y-axis
@@ -785,11 +785,11 @@ namespace _3DModeler
             Mat4x4 matCameraRot = Matrix_MakeIdentity();
             Mat4x4 matCameraRot_X = Matrix_MakeRotationX(world.fPitch);
             Mat4x4 matCameraRot_Y = Matrix_MakeRotationY(world.fYaw);
-            matCameraRot = Matrix_MultiplyMatrix(ref matCameraRot_X, ref matCameraRot_Y);
+            matCameraRot = matCameraRot_X * matCameraRot_Y;
             // This rotated forward vector becomes the camera's look direction
-            world.vLookDir = Matrix_MultiplyVector(ref matCameraRot, ref vForwardCam);
+            world.vLookDir = matCameraRot * vForwardCam;
             // Offset look direction to the camera location to get the target the camera points at
-            Vec3d vTarget = Vector_Add(ref world.vCamera, ref world.vLookDir);
+            Vec3d vTarget = world.vCamera + world.vLookDir;
             // Construct the "Point At" matrix
             Mat4x4 matCamera = Matrix_PointAt(ref world.vCamera, ref vTarget, ref vUp);
 
@@ -820,9 +820,9 @@ namespace _3DModeler
                 {
                     Triangle triTransformed = new Triangle();
                     // World Matrix Transform
-                    triTransformed.p[0] = Matrix_MultiplyVector(ref matWorld, ref tri.p[0]);
-                    triTransformed.p[1] = Matrix_MultiplyVector(ref matWorld, ref tri.p[1]);
-                    triTransformed.p[2] = Matrix_MultiplyVector(ref matWorld, ref tri.p[2]);
+                    triTransformed.p[0] = matWorld * tri.p[0];
+                    triTransformed.p[1] = matWorld * tri.p[1];
+                    triTransformed.p[2] = matWorld * tri.p[2];
                     // texture information stays the same
                     triTransformed.t[0] = tri.t[0];
                     triTransformed.t[1] = tri.t[1];
@@ -833,22 +833,22 @@ namespace _3DModeler
                     Vec3d normal = new Vec3d(), line1 = new Vec3d(), line2 = new Vec3d();
 
                     // Get lines on either side of triangle
-                    line1 = Vector_Sub(ref triTransformed.p[1], ref triTransformed.p[0]);
-                    line2 = Vector_Sub(ref triTransformed.p[2], ref triTransformed.p[0]);
+                    line1 = triTransformed.p[1] - triTransformed.p[0];
+                    line2 = triTransformed.p[2] - triTransformed.p[0];
 
                     // Take the cross product of lines to get normal to triangle surface
                     normal = Vector_CrossProduct(ref line1, ref line2);
                     normal = Vector_Normalize(ref normal);
 
                     // Get Ray from camera to triangle
-                    Vec3d vCameraRay = Vector_Sub(ref triTransformed.p[0], ref world.vCamera);
+                    Vec3d vCameraRay = triTransformed.p[0] - world.vCamera;
 
                     // if ray is aligned with normal then triangle is visible
                     // if not it is culled
                     // right now this means triangles on the other side of an object we won't see
                     // so if we could see through one side of the object, we wouldn't the inside of the
                     // other side as it'd be culled. Note, Make toggleable
-                    if (Vector_DotProduct(ref normal, ref vCameraRay) < 0.0f)
+                    // if (Vector_DotProduct(ref normal, ref vCameraRay) < 0.0f)
                     {
                         // Illumination
                         Vec3d light_direction = new Vec3d(0.0f, 1.0f, -1.0f);
@@ -864,9 +864,9 @@ namespace _3DModeler
 
                         // convert World Space --> View Space
                         Triangle triViewed = new Triangle();
-                        triViewed.p[0] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[0]);
-                        triViewed.p[1] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[1]);
-                        triViewed.p[2] = Matrix_MultiplyVector(ref matView, ref triTransformed.p[2]);
+                        triViewed.p[0] = matView * triTransformed.p[0];
+                        triViewed.p[1] = matView * triTransformed.p[1];
+                        triViewed.p[2] = matView * triTransformed.p[2];
                         triViewed.col = triTransformed.col;
                         // Texture information is still not updated
                         triViewed.t[0] = triTransformed.t[0];
@@ -887,9 +887,9 @@ namespace _3DModeler
                             // Project triangles from 3D --> 2D
                             // View space -> screen space
                             Triangle triProjected = new Triangle();
-                            triProjected.p[0] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[0]);
-                            triProjected.p[1] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[1]);
-                            triProjected.p[2] = Matrix_MultiplyVector(ref world.matProj, ref clipped[n].p[2]);
+                            triProjected.p[0] = world.matProj * clipped[n].p[0];
+                            triProjected.p[1] = world.matProj * clipped[n].p[1];
+                            triProjected.p[2] = world.matProj * clipped[n].p[2];
                             triProjected.col = clipped[n].col;
                             triProjected.t[0] = clipped[n].t[0];
                             triProjected.t[1] = clipped[n].t[1];
@@ -911,9 +911,9 @@ namespace _3DModeler
                             triProjected.t[2].w = 1.0f / triProjected.p[2].w;
 
                             // each vertex is divided by the z-component to add perspective
-                            triProjected.p[0] = Vector_Div(ref triProjected.p[0], triProjected.p[0].w);
-                            triProjected.p[1] = Vector_Div(ref triProjected.p[1], triProjected.p[1].w);
-                            triProjected.p[2] = Vector_Div(ref triProjected.p[2], triProjected.p[2].w);
+                            triProjected.p[0] = triProjected.p[0] / triProjected.p[0].w;
+                            triProjected.p[1] = triProjected.p[1] / triProjected.p[1].w;
+                            triProjected.p[2] = triProjected.p[2] / triProjected.p[2].w;
 
                             // We must invert X because our system uses a left-hand coordinate system	
                             triProjected.p[0].x *= -1.0f;
@@ -927,9 +927,9 @@ namespace _3DModeler
                             // Projection Matrix gives results from -1 to +1 through dividing by Z
                             // So we offset vertices to fit on our screen that goes from 0 to height or width
                             Vec3d vOffsetView = new Vec3d(1, 1, 0);
-                            triProjected.p[0] = Vector_Add(ref triProjected.p[0], ref vOffsetView);
-                            triProjected.p[1] = Vector_Add(ref triProjected.p[1], ref vOffsetView);
-                            triProjected.p[2] = Vector_Add(ref triProjected.p[2], ref vOffsetView);
+                            triProjected.p[0] = triProjected.p[0] + vOffsetView;
+                            triProjected.p[1] = triProjected.p[1] + vOffsetView;
+                            triProjected.p[2] = triProjected.p[2] + vOffsetView;
 
                             // vertices are now between 0 and 2 so we scale into viewable
                             // screen height and width
