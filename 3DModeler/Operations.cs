@@ -12,6 +12,7 @@ namespace _3DModeler
     internal static class Operations
     {
         // A 2D structure to hold texture coordinates
+        // Perhaps replace with one from System.Numerics
         public struct Vec2d
         {
             public Vec2d() { }
@@ -27,20 +28,19 @@ namespace _3DModeler
                 this.v = vec2D.v;
                 this.w = vec2D.w;
             }
-            public bool Equals(Vec2d p)
-            {
-                // Return true if the fields match.
-                // Note that the base class is not invoked because it is
-                // System.Object, which defines Equals as reference equality.
-                return this.u == p.u && this.v == p.v;
-            }
+
             public float u = 0;
             public float v = 0;
             public float w = 1; // Keeps track of the depth of each texture coordinate
 
+            public bool Equals(Vec2d p)
+            {
+                return this.u == p.u && this.v == p.v;
+            }
         }
 
         // A 3D structure to hold vertex coordinates
+        // Perhaps replace with struct from System.Numerics
         public struct Vec3d
         {
             public Vec3d() { }
@@ -75,6 +75,16 @@ namespace _3DModeler
                     x = lhs.x + rhs,
                     y = lhs.y + rhs,
                     z = lhs.z + rhs
+                };
+                return vec3D;
+            }
+            public static Vec3d operator -(Vec3d vec)
+            {
+                Vec3d vec3D = new Vec3d
+                {
+                    x = - vec.x,
+                    y = - vec.y,
+                    z = - vec.z
                 };
                 return vec3D;
             }
@@ -118,32 +128,30 @@ namespace _3DModeler
                 };
                 return vec3D;
             }
-            
-            public bool Equals(Vec3d p)
-            {
-                // Return true if the fields match.
-                // Note that the base class is not invoked because it is
-                // System.Object, which defines Equals as reference equality.
-                return this.x == p.x && this.y == p.y && this.z == p.z;
-            }
 
             public float x = 0;
             public float y = 0;
             public float z = 0;
             public float w = 1; // 4th term is needed for vector multiplication
+
+            public bool Equals(Vec3d p)
+            {
+                return this.x == p.x && this.y == p.y && this.z == p.z;
+            }
         }
 
+        // Perhaps replace with struct from System.Numerics
         public struct Mat4x4
         {
             public Mat4x4() { }
-            public static Vec3d operator *(Mat4x4 lhs, Vec3d rhs)
+            public static Vec3d operator *(Vec3d lhs, Mat4x4 rhs)
             {
                 Vec3d v = new Vec3d
                 {
-                    x = rhs.x * lhs.m[0, 0] + rhs.y * lhs.m[1, 0] + rhs.z * lhs.m[2, 0] + rhs.w * lhs.m[3, 0],
-                    y = rhs.x * lhs.m[0, 1] + rhs.y * lhs.m[1, 1] + rhs.z * lhs.m[2, 1] + rhs.w * lhs.m[3, 1],
-                    z = rhs.x * lhs.m[0, 2] + rhs.y * lhs.m[1, 2] + rhs.z * lhs.m[2, 2] + rhs.w * lhs.m[3, 2],
-                    w = rhs.x * lhs.m[0, 3] + rhs.y * lhs.m[1, 3] + rhs.z * lhs.m[2, 3] + rhs.w * lhs.m[3, 3]
+                    x = lhs.x * rhs.m[0, 0] + lhs.y * rhs.m[1, 0] + lhs.z * rhs.m[2, 0] + lhs.w * rhs.m[3, 0],
+                    y = lhs.x * rhs.m[0, 1] + lhs.y * rhs.m[1, 1] + lhs.z * rhs.m[2, 1] + lhs.w * rhs.m[3, 1],
+                    z = lhs.x * rhs.m[0, 2] + lhs.y * rhs.m[1, 2] + lhs.z * rhs.m[2, 2] + lhs.w * rhs.m[3, 2],
+                    w = lhs.x * rhs.m[0, 3] + lhs.y * rhs.m[1, 3] + lhs.z * rhs.m[2, 3] + lhs.w * rhs.m[3, 3]
                 };
                 return v;
             }
@@ -155,7 +163,6 @@ namespace _3DModeler
                         matrix.m[r, c] = lhs.m[r, 0] * rhs.m[0, c] + lhs.m[r, 1] * rhs.m[1, c] + lhs.m[r, 2] * rhs.m[2, c] + lhs.m[r, 3] * rhs.m[3, c];
                 return matrix;
             }
-
 
             public float[,] m = new float[4, 4];
         }
@@ -170,6 +177,7 @@ namespace _3DModeler
             return matrix;
         }
 
+        // Rotates clockwise when looking along the positive axis
         public static Mat4x4 Matrix_MakeRotationX(float fAngleRad)
         {
             Mat4x4 matrix = new Mat4x4();
@@ -208,16 +216,35 @@ namespace _3DModeler
 
         public static Mat4x4 Matrix_MakeTranslation(float x, float y, float z)
         {
-            Mat4x4 matrix = new Mat4x4();
-            matrix.m[0,0] = 1.0f;
-            matrix.m[1,1] = 1.0f;
-            matrix.m[2,2] = 1.0f;
-            matrix.m[3,3] = 1.0f;
+            Mat4x4 matrix = Matrix_MakeIdentity();
             matrix.m[3,0] = x;
             matrix.m[3,1] = y;
             matrix.m[3,2] = z;
             return matrix;
         }
+        public static Mat4x4 Matrix_MakeScale(float x)
+        {
+            Mat4x4 matrix = Matrix_MakeIdentity();
+            matrix.m[0, 0] = x;
+            return matrix;
+        }
+
+        public static Mat4x4 Matrix_MakeScale(float x, float y)
+        {
+            Mat4x4 matrix = Matrix_MakeIdentity();
+            matrix.m[0, 0] = x;
+            matrix.m[1, 1] = y;
+            return matrix;
+        }
+        public static Mat4x4 Matrix_MakeScale(float x, float y, float z)
+        {
+            Mat4x4 matrix = Matrix_MakeIdentity();
+            matrix.m[0, 0] = x;
+            matrix.m[1, 1] = y;
+            matrix.m[2, 2] = z;
+            return matrix;
+        }
+
 
         public static Mat4x4 Matrix_MakeProjection(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
         {
@@ -237,33 +264,55 @@ namespace _3DModeler
 
         public static Mat4x4 Matrix_PointAt(ref Vec3d pos, ref Vec3d target, ref Vec3d up)
         {
-            // calculate new forward direction
+            // calculate new Forward direction
             Vec3d newForward = target - pos;
             newForward = Vector_Normalize(ref newForward);
 
-            // Calculate new Up direction incase foward vector has a y-component
+            // Calculate new Up direction incase forward vector has a y-component
             Vec3d a = newForward * Vector_DotProduct(ref up, ref newForward);
             Vec3d newUp = up - a;
             newUp = Vector_Normalize(ref newUp);
 
-            // New Right direction is easy, its just cross product
+            // New Right direction is just cross product
             Vec3d newRight = Vector_CrossProduct(ref newUp, ref newForward);
 
             // Construct Dimensioning and Translation Matrix	
             Mat4x4 matrix = new Mat4x4();
-            matrix.m[0,0] = newRight.x; matrix.m[0,1] = newRight.y; matrix.m[0,2] = newRight.z; matrix.m[0,3] = 0.0f;
-            matrix.m[1,0] = newUp.x; matrix.m[1,1] = newUp.y; matrix.m[1,2] = newUp.z; matrix.m[1,3] = 0.0f;
-            matrix.m[2,0] = newForward.x; matrix.m[2,1] = newForward.y; matrix.m[2,2] = newForward.z; matrix.m[2,3] = 0.0f;
-            matrix.m[3,0] = pos.x; matrix.m[3,1] = pos.y; matrix.m[3,2] = pos.z; matrix.m[3,3] = 1.0f;
+            matrix.m[0,0] = newRight.x; 
+            matrix.m[0,1] = newRight.y; 
+            matrix.m[0,2] = newRight.z; 
+            matrix.m[0,3] = 0.0f;
+            matrix.m[1,0] = newUp.x; 
+            matrix.m[1,1] = newUp.y; 
+            matrix.m[1,2] = newUp.z; 
+            matrix.m[1,3] = 0.0f;
+            matrix.m[2,0] = newForward.x; 
+            matrix.m[2,1] = newForward.y; 
+            matrix.m[2,2] = newForward.z; 
+            matrix.m[2,3] = 0.0f;
+            matrix.m[3,0] = pos.x; 
+            matrix.m[3,1] = pos.y; 
+            matrix.m[3,2] = pos.z; 
+            matrix.m[3,3] = 1.0f;
             return matrix;
         }
 
-        public static Mat4x4 Matrix_QuickInverse(ref Mat4x4 m) // Only for Rotation/Translation Matrices
+        // Only for Rotation/Translation Matrices
+        public static Mat4x4 Matrix_QuickInverse(ref Mat4x4 m) 
         {
             Mat4x4 matrix = new Mat4x4();
-            matrix.m[0,0] = m.m[0,0]; matrix.m[0,1] = m.m[1,0]; matrix.m[0,2] = m.m[2,0]; matrix.m[0,3] = 0.0f;
-            matrix.m[1,0] = m.m[0,1]; matrix.m[1,1] = m.m[1,1]; matrix.m[1,2] = m.m[2,1]; matrix.m[1,3] = 0.0f;
-            matrix.m[2,0] = m.m[0,2]; matrix.m[2,1] = m.m[1,2]; matrix.m[2,2] = m.m[2,2]; matrix.m[2,3] = 0.0f;
+            matrix.m[0,0] = m.m[0,0]; 
+            matrix.m[0,1] = m.m[1,0]; 
+            matrix.m[0,2] = m.m[2,0]; 
+            matrix.m[0,3] = 0.0f;
+            matrix.m[1,0] = m.m[0,1]; 
+            matrix.m[1,1] = m.m[1,1]; 
+            matrix.m[1,2] = m.m[2,1]; 
+            matrix.m[1,3] = 0.0f;
+            matrix.m[2,0] = m.m[0,2]; 
+            matrix.m[2,1] = m.m[1,2]; 
+            matrix.m[2,2] = m.m[2,2]; 
+            matrix.m[2,3] = 0.0f;
             matrix.m[3,0] = -(m.m[3,0] * matrix.m[0,0] + m.m[3,1] * matrix.m[1,0] + m.m[3,2] * matrix.m[2,0]);
             matrix.m[3,1] = -(m.m[3,0] * matrix.m[0,1] + m.m[3,1] * matrix.m[1,1] + m.m[3,2] * matrix.m[2,1]);
             matrix.m[3,2] = -(m.m[3,0] * matrix.m[0,2] + m.m[3,1] * matrix.m[1,2] + m.m[3,2] * matrix.m[2,2]);
@@ -313,6 +362,5 @@ namespace _3DModeler
             Vec3d lineToIntersect = lineStartToEnd * t;
             return lineStart + lineToIntersect;
         }
-
     }
 }
