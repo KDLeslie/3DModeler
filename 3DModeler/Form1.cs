@@ -1,17 +1,7 @@
-using Microsoft.VisualBasic.Devices;
-using System;
-using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
-using System.Drawing.Drawing2D;
-using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
-using System.Net.Security;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-using System.Windows.Forms;
 using static _3DModeler.Operations;
 
 namespace _3DModeler
@@ -79,6 +69,9 @@ namespace _3DModeler
             public Vec2d[] t = new Vec2d[3]; // Stores texel coordinates for each vertex
             public float lum = 0; // Calculated luminosity for the triangle based on light source
             public Vec3d normal = new Vec3d(); // Normal vector of the triangle
+            public bool drawLine0_1 = true;
+            public bool drawLine1_2 = true;
+            public bool drawLine2_0 = true;             
         }
 
         struct Quadrilateral
@@ -198,14 +191,29 @@ namespace _3DModeler
                             if (line[0] == 'f')
                             {
                                 string[] indices = line.Split(' ');
-                                Triangle triangle = new Triangle();
-                                // Index through pool of vertices to get the ones corresponding
-                                // to this face
-                                // obj files use 1 indexing so our indices are off by 1
-                                triangle.p[0] = verts[int.Parse(indices[1]) - 1];
-                                triangle.p[1] = verts[int.Parse(indices[2]) - 1];
-                                triangle.p[2] = verts[int.Parse(indices[3]) - 1];
-                                tris.Add(triangle);
+                                if (indices.Length == 4)
+                                {
+                                    Triangle triangle = new Triangle();
+                                    // Index through pool of vertices to get the ones corresponding
+                                    // to this face
+                                    // obj files use 1 indexing so our indices are off by 1
+                                    triangle.p[0] = verts[int.Parse(indices[1]) - 1];
+                                    triangle.p[1] = verts[int.Parse(indices[2]) - 1];
+                                    triangle.p[2] = verts[int.Parse(indices[3]) - 1];
+                                    tris.Add(triangle);
+                                }
+                                else if (indices.Length == 5)
+                                {
+                                    Quadrilateral quadrilateral = new Quadrilateral();
+                                    // Index through pool of vertices to get the ones corresponding
+                                    // to this face
+                                    // obj files use 1 indexing so our indices are off by 1
+                                    quadrilateral.p[0] = verts[int.Parse(indices[1]) - 1];
+                                    quadrilateral.p[1] = verts[int.Parse(indices[2]) - 1];
+                                    quadrilateral.p[2] = verts[int.Parse(indices[3]) - 1];
+                                    quadrilateral.p[3] = verts[int.Parse(indices[4]) - 1];
+                                    quads.Add(quadrilateral);
+                                }
                             }
                         }
                         else
@@ -213,23 +221,47 @@ namespace _3DModeler
                             if (line[0] == 'f')
                             {
                                 string[] indexPairs = line.Split(' ');
-                                // Temporary arrays to store the indices for the vertices and texels
-                                int[] p = new int[3];
-                                int[] t = new int[3];
-                                for (int i = 0; i < 3; i++)
+                                if (indexPairs.Length == 4)
                                 {
-                                    // Vertex and texel indices are separated bt '/' 
-                                    string[] p_t = indexPairs[i + 1].Split('/');
-                                    p[i] = int.Parse(p_t[0]);
-                                    t[i] = int.Parse(p_t[1]);
+                                    // Temporary arrays to store the indices for the vertices and texels
+                                    int[] p = new int[3];
+                                    int[] t = new int[3];
+                                    for (int i = 0; i < 3; i++)
+                                    {
+                                        // Vertex and texel indices are separated bt '/' 
+                                        string[] p_t = indexPairs[i + 1].Split('/');
+                                        p[i] = int.Parse(p_t[0]);
+                                        t[i] = int.Parse(p_t[1]);
+                                    }
+                                    Triangle triangle = new Triangle();
+                                    for (int i = 0; i < 3; i++)
+                                    {
+                                        triangle.p[i] = verts[p[i] - 1];
+                                        triangle.t[i] = texs[t[i] - 1];
+                                    }
+                                    tris.Add(triangle);
                                 }
-                                Triangle triangle = new Triangle();
-                                for (int i = 0; i < 3; i++)
+                                else if (indexPairs.Length == 5)
                                 {
-                                    triangle.p[i] = verts[p[i] - 1];
-                                    triangle.t[i] = texs[t[i] - 1];
+                                    // Temporary arrays to store the indices for the vertices and texels
+                                    int[] p = new int[4];
+                                    int[] t = new int[4];
+                                    for (int i = 0; i < 4; i++)
+                                    {
+                                        // Vertex and texel indices are separated bt '/' 
+                                        string[] p_t = indexPairs[i + 1].Split('/');
+                                        p[i] = int.Parse(p_t[0]);
+                                        t[i] = int.Parse(p_t[1]);
+                                    }
+                                    Quadrilateral quadrilateral = new Quadrilateral();
+                                    for (int i = 0; i < 4; i++)
+                                    {
+                                        quadrilateral.p[i] = verts[p[i] - 1];
+                                        quadrilateral.t[i] = texs[t[i] - 1];
+                                    }
+                                    quads.Add(quadrilateral);
                                 }
-                                tris.Add(triangle);
+
                             }
 
                         }
@@ -383,6 +415,10 @@ namespace _3DModeler
 
                     // Copy appearance info to new triangle
                     out_tri1.lum = in_tri.lum;
+                    //out_tri1.drawline0_1 = in_tri.drawline0_1;
+                    //out_tri1.drawline1_2 = in_tri.drawline1_2;
+                    //out_tri1.drawline2_0 = in_tri.drawline2_0;
+
 
                     // The inside point is valid, so keep that...
                     out_tri1.p[0] = inside_points[0];
@@ -401,6 +437,8 @@ namespace _3DModeler
                     out_tri1.t[2].v = t * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v;
                     out_tri1.t[2].w = t * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w;
 
+                    // out_tri1.drawline2_0 = false;
+
                     return 1; // Return the newly formed single triangle
                 }
                 else if (nInsidePointCount == 2 && nOutsidePointCount == 1)
@@ -411,8 +449,14 @@ namespace _3DModeler
 
                     // Copy appearance info to new triangles
                     out_tri1.lum = in_tri.lum;
+                    //out_tri1.drawline0_1 = in_tri.drawline0_1;
+                    //out_tri1.drawline1_2 = in_tri.drawline1_2;
+                    //out_tri1.drawline2_0 = in_tri.drawline2_0;
 
                     out_tri2.lum = in_tri.lum;
+                    //out_tri2.drawline0_1 = in_tri.drawline0_1;
+                    //out_tri2.drawline1_2 = in_tri.drawline1_2;
+                    //out_tri2.drawline2_0 = in_tri.drawline2_0;
 
                     // The first triangle consists of the two inside points and a new
                     // point determined by the location where one side of the triangle
@@ -427,6 +471,7 @@ namespace _3DModeler
                     out_tri1.t[2].u = t * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
                     out_tri1.t[2].v = t * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
                     out_tri1.t[2].w = t * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
+                    // out_tri1.drawline2_0 = false;
 
                     // The second triangle is composed of one of he inside points, a
                     // new point determined by the intersection of the other side of the 
@@ -439,6 +484,7 @@ namespace _3DModeler
                     out_tri2.t[2].u = t * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u;
                     out_tri2.t[2].v = t * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v;
                     out_tri2.t[2].w = t * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w;
+                    // out_tri2.drawline0_1 = false;
                     return 2; // Return two newly formed triangles which form a quad
                 }
                 else
@@ -447,7 +493,371 @@ namespace _3DModeler
                 }
             }
 
+            //public (int, int) Quadrilateral_ClipAgainstPlane(Vec3d plane_p, Vec3d plane_n, ref Quadrilateral in_quad, ref Quadrilateral out_quad, ref Triangle out_tri)
+            //{
+            //    // Make sure plane normal is indeed normal
+            //    plane_n = Vector_Normalize(ref plane_n);
+
+            //    // Return signed shortest distance from point to plane, plane normal must be normalized
+            //    Func<Vec3d, float> dist = (Vec3d p) =>
+            //    {
+            //        return (Vector_DotProduct(ref plane_n, ref p) - Vector_DotProduct(ref plane_n, ref plane_p));
+            //    };
+
+            //    // Create two temporary storage arrays to classify points either side of plane
+            //    // If distance sign is positive, point lies on "inside" of plane
+            //    Vec3d[] inside_points = new Vec3d[4] { new Vec3d(), new Vec3d(), new Vec3d(), new Vec3d() };
+            //    int nInsidePointCount = 0;
+            //    Vec3d[] outside_points = new Vec3d[4] { new Vec3d(), new Vec3d(), new Vec3d(), new Vec3d() };
+            //    int nOutsidePointCount = 0;
+            //    Vec2d[] inside_tex = new Vec2d[4] { new Vec2d(), new Vec2d(), new Vec2d(), new Vec2d() };
+            //    int nInsideTexCount = 0;
+            //    Vec2d[] outside_tex = new Vec2d[4] { new Vec2d(), new Vec2d(), new Vec2d(), new Vec2d() };
+            //    int nOutsideTexCount = 0;
+
+
+            //    Dictionary<Vec3d, Vec3d> nextVertex = new Dictionary<Vec3d, Vec3d>
+            //    {
+            //        { in_quad.p[0], in_quad.p[1] },
+            //        { in_quad.p[1], in_quad.p[2] },
+            //        { in_quad.p[2], in_quad.p[3] },
+            //        { in_quad.p[3], in_quad.p[0] }
+            //    };
+
+            //    Dictionary<Vec3d, Vec3d> previousVertex = new Dictionary<Vec3d, Vec3d>
+            //    {
+            //        {  in_quad.p[0], in_quad.p[3] },
+            //        {  in_quad.p[1], in_quad.p[0] },
+            //        {  in_quad.p[2], in_quad.p[1] },
+            //        {  in_quad.p[3], in_quad.p[2] }
+            //    };
+
+
+            //    Dictionary<Vec2d, Vec2d> nextTexVertex = new Dictionary<Vec2d, Vec2d>
+            //    {
+            //        { in_quad.t[0], in_quad.t[1] },
+            //        { in_quad.t[1], in_quad.t[2] },
+            //        { in_quad.t[2], in_quad.t[3] },
+            //        { in_quad.t[3], in_quad.t[0] }
+            //    };
+
+            //    Dictionary<Vec2d, Vec2d> previousTexVertex = new Dictionary<Vec2d, Vec2d>
+            //    {
+            //        {  in_quad.t[0], in_quad.t[3] },
+            //        {  in_quad.t[1], in_quad.t[0] },
+            //        {  in_quad.t[2], in_quad.t[1] },
+            //        {  in_quad.t[3], in_quad.t[2] }
+            //    };
+
+
+            //    // Get signed distance of each point in triangle to plane
+            //    float d0 = dist(in_quad.p[0]);
+            //    float d1 = dist(in_quad.p[1]);
+            //    float d2 = dist(in_quad.p[2]);
+            //    float d3 = dist(in_quad.p[3]);
+
+            //    if (d0 >= 0)
+            //    {
+            //        inside_points[nInsidePointCount++] = in_quad.p[0];
+            //        inside_tex[nInsideTexCount++] = in_quad.t[0];
+            //    }
+            //    else
+            //    {
+            //        outside_points[nOutsidePointCount++] = in_quad.p[0];
+            //        outside_tex[nOutsideTexCount++] = in_quad.t[0];
+            //    }
+            //    if (d1 >= 0)
+            //    {
+            //        inside_points[nInsidePointCount++] = in_quad.p[1];
+            //        inside_tex[nInsideTexCount++] = in_quad.t[1];
+            //    }
+            //    else
+            //    {
+            //        outside_points[nOutsidePointCount++] = in_quad.p[1];
+            //        outside_tex[nOutsideTexCount++] = in_quad.t[1];
+            //    }
+            //    if (d2 >= 0)
+            //    {
+            //        inside_points[nInsidePointCount++] = in_quad.p[2];
+            //        inside_tex[nInsideTexCount++] = in_quad.t[2];
+            //    }
+            //    else
+            //    {
+            //        outside_points[nOutsidePointCount++] = in_quad.p[2];
+            //        outside_tex[nOutsideTexCount++] = in_quad.t[2];
+            //    }
+            //    if (d3 >= 0)
+            //    {
+            //        inside_points[nInsidePointCount++] = in_quad.p[3];
+            //        inside_tex[nInsideTexCount++] = in_quad.t[3];
+            //    }
+            //    else
+            //    {
+            //        outside_points[nOutsidePointCount++] = in_quad.p[3];
+            //        outside_tex[nOutsideTexCount++] = in_quad.t[3];
+            //    }
+
+            //    // Now classify quadrilateral points, and break the input quadrilateral into 
+            //    // smaller output quadrilaterals if required. There are five possible
+            //    // outcomes...
+
+            //    if (nInsidePointCount == 0)
+            //    {
+            //        // All points lie on the outside of plane, so clip whole quadrilateral
+            //        // It ceases to exist
+
+            //        return (0, 0); // No returned triangles are valid
+            //    }
+            //    else if (nInsidePointCount == 3)
+            //    {
+            //        // All points lie on the inside of plane, so do nothing
+            //        // and allow the triangle to simply pass through
+            //        out_quad = in_quad;
+
+            //        return (1, 0); // Just the one returned original triangle is valid
+            //    }
+            //    else if (nInsidePointCount == 1 && nOutsidePointCount == 3)
+            //    {
+            //        // Triangle should be clipped. As two points lie outside
+            //        // the plane, the triangle simply becomes a smaller triangle
+
+            //        // Copy appearance info to new triangle
+            //        out_tri.lum = in_quad.lum;
+
+            //        // The inside point is valid, so keep that...
+            //        out_tri.p[0] = inside_points[0];
+            //        out_tri.t[0] = inside_tex[0];
+
+            //        // but the two new points are at the locations where the 
+            //        // original sides of the triangle (lines) intersect with the plane
+
+            //        Vec3d v1 = nextVertex[inside_points[0]];
+            //        Vec3d v2 = previousVertex[inside_points[0]];
+
+
+
+            //        float t = 0;
+            //        out_tri.p[1] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref v1, ref t);
+            //        out_tri.t[1].u = t * (nextTexVertex[inside_tex[0]].u - inside_tex[0].u) + inside_tex[0].u;
+            //        out_tri.t[1].v = t * (nextTexVertex[inside_tex[0]].v - inside_tex[0].v) + inside_tex[0].v;
+            //        out_tri.t[1].w = t * (nextTexVertex[inside_tex[0]].w - inside_tex[0].w) + inside_tex[0].w;
+
+            //        out_tri.p[2] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref v2, ref t);
+            //        out_tri.t[2].u = t * (previousTexVertex[inside_tex[0]].u - inside_tex[0].u) + inside_tex[0].u;
+            //        out_tri.t[2].v = t * (previousTexVertex[inside_tex[0]].v - inside_tex[0].v) + inside_tex[0].v;
+            //        out_tri.t[2].w = t * (previousTexVertex[inside_tex[0]].w - inside_tex[0].w) + inside_tex[0].w;
+
+            //        return (0, 1); // Return the newly formed single triangle
+            //    }
+            //    else if (nInsidePointCount == 2 && nOutsidePointCount == 2)
+            //    {
+            //        // Triangle should be clipped. As two points lie outside
+            //        // the plane, the triangle simply becomes a smaller triangle
+
+            //        // Copy appearance info to new triangle
+            //        out_quad.lum = in_quad.lum;
+
+            //        // The inside points are valid, so keep that...
+            //        out_quad.p[0] = inside_points[0];
+            //        out_quad.t[0] = inside_tex[0];
+
+            //        out_quad.p[3] = inside_points[1];
+            //        out_quad.t[3] = inside_tex[1];
+
+            //        // but the two new points are at the locations where the 
+            //        // original sides of the triangle (lines) intersect with the plane
+            //        float t = 0;
+            //        out_quad.p[1] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref outside_points[0], ref t);
+            //        out_quad.t[1].u = t * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
+            //        out_quad.t[1].v = t * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
+            //        out_quad.t[1].w = t * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
+
+            //        out_quad.p[2] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[1], ref outside_points[1], ref t);
+            //        out_quad.t[2].u = t * (outside_tex[1].u - inside_tex[1].u) + inside_tex[1].u;
+            //        out_quad.t[2].v = t * (outside_tex[1].v - inside_tex[1].v) + inside_tex[1].v;
+            //        out_quad.t[2].w = t * (outside_tex[1].w - inside_tex[1].w) + inside_tex[1].w;
+
+            //        return (1, 0); // Return the newly formed single triangle
+            //    }
+            //    else if (nInsidePointCount == 3 && nOutsidePointCount == 1)
+            //    {
+
+            //        Vec3d v1 = nextVertex[outside_points[0]];
+            //        Vec3d v2 = previousVertex[outside_points[0]];
+
+
+            //        float t = 0;
+            //        out_tri.p[0] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref outside_points[0], ref v1, ref t);
+            //        out_tri.t[0].u = t * (nextTexVertex[outside_tex[0]].u - outside_tex[0].u) + outside_tex[0].u;
+            //        out_tri.t[0].v = t * (nextTexVertex[outside_tex[0]].v - outside_tex[0].v) + outside_tex[0].v;
+            //        out_tri.t[0].w = t * (nextTexVertex[outside_tex[0]].w - outside_tex[0].w) + outside_tex[0].w;
+
+
+            //        out_tri.p[1] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref outside_points[0], ref v2, ref t);
+            //        out_tri.t[1].u = t * (previousTexVertex[outside_tex[0]].u - outside_tex[0].u) + outside_tex[0].u;
+            //        out_tri.t[1].v = t * (previousTexVertex[outside_tex[0]].v - outside_tex[0].v) + outside_tex[0].v;
+            //        out_tri.t[1].w = t * (previousTexVertex[outside_tex[0]].w - outside_tex[0].w) + outside_tex[0].w;
+
+            //        out_tri.p[2] = nextVertex[outside_points[0]];
+            //        out_tri.t[2] = nextTexVertex[outside_tex[0]];
+
+            //        out_tri.lum = in_quad.lum;
+
+
+            //        out_quad.p[0] = new Vec3d(out_tri.p[1]);
+            //        out_quad.t[0] = new Vec2d(out_tri.t[1]);
+            //        out_quad.p[1] = new Vec3d(previousVertex[outside_points[0]]);
+            //        out_quad.t[1] = new Vec2d(previousTexVertex[outside_tex[0]]);
+            //        out_quad.p[2] = new Vec3d(previousVertex[v2]);
+            //        out_quad.t[2] = new Vec2d(previousTexVertex[previousTexVertex[outside_tex[0]]]);
+            //        out_quad.p[3] = new Vec3d(nextVertex[outside_points[0]]);
+            //        out_quad.t[3] = new Vec2d(nextTexVertex[outside_tex[0]]);
+
+            //        out_quad.lum = in_quad.lum;
+
+
+            //        return (1, 1); // Return two newly formed triangles which form a quad
+            //    }
+            //    else
+            //    {
+            //        return (0, 0);
+            //    }
+            //}
+
             // Returns a color based on an objects luminance between 0 and 1
+
+            public void RasterizeTriangle(Mat4x4 worldMat, Mat4x4 matView, Triangle tri, ref List<Triangle> vecTrianglesToRaster)
+            {
+                // Prepare each triangle for drawing
+
+                Triangle triTransformed = new Triangle();
+                // World Matrix Transform
+                triTransformed.p[0] = tri.p[0] * worldMat;
+                triTransformed.p[1] = tri.p[1] * worldMat;
+                triTransformed.p[2] = tri.p[2] * worldMat;
+                triTransformed.t[0] = tri.t[0];
+                triTransformed.t[1] = tri.t[1];
+                triTransformed.t[2] = tri.t[2];
+                triTransformed.drawLine0_1 = tri.drawLine0_1;
+                triTransformed.drawLine1_2 = tri.drawLine1_2;
+                triTransformed.drawLine2_0 = tri.drawLine2_0;
+
+                // Calculate triangle's Normal 
+                Vec3d normal, line1, line2;
+
+                // Get lines on either side of triangle
+                line1 = triTransformed.p[1] - triTransformed.p[0];
+                line2 = triTransformed.p[2] - triTransformed.p[0];
+
+                // Take the cross product of lines to get normal to triangle surface
+                normal = Vector_CrossProduct(ref line1, ref line2);
+                normal = Vector_Normalize(ref normal);
+
+                // Get Ray from camera to triangle
+                Vec3d vCameraRay = triTransformed.p[0] - vCamera;
+
+                // If ray is aligned with normal then triangle is visible
+                // if not it is culled, in other words, triangles with normals 
+                // facing away from the camera won't be seen.
+                // Note: Make toggleable
+                if (Vector_DotProduct(ref normal, ref vCameraRay) < 0.0f)
+                {
+                    // Illumination
+                    Vec3d light_direction = new Vec3d(0.0f, -1.0f, 1.0f);
+                    light_direction = Vector_Normalize(ref light_direction);
+                    // How "aligned" are light direction and triangle surface normal?
+                    // The less the triangle normal and the light direction are aligned
+                    // the dimmer the triangle. Normal and light vectors are in opposite
+                    // directions so we negate the dot product
+                    float lum = MathF.Max(0.1f, -Vector_DotProduct(ref light_direction, ref normal));
+                    triTransformed.lum = lum;
+
+                    // Convert World Space --> View Space
+                    Triangle triViewed = new Triangle();
+                    triViewed.p[0] = triTransformed.p[0] * matView;
+                    triViewed.p[1] = triTransformed.p[1] * matView;
+                    triViewed.p[2] = triTransformed.p[2] * matView;
+                    triViewed.lum = triTransformed.lum;
+                    triViewed.drawLine0_1 = triTransformed.drawLine0_1;
+                    triViewed.drawLine1_2 = triTransformed.drawLine1_2;
+                    triViewed.drawLine2_0 = triTransformed.drawLine2_0;
+                    triViewed.t[0] = triTransformed.t[0];
+                    triViewed.t[1] = triTransformed.t[1];
+                    triViewed.t[2] = triTransformed.t[2];
+
+                    // Clip the Viewed Triangle against near plane, this could form two additional
+                    // triangles.
+                    int nClippedTriangles = 0;
+                    Triangle[] clipped = new Triangle[2] { new Triangle(), new Triangle() };
+                    nClippedTriangles = Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.1f), new Vec3d(0.0f, 0.0f, 1.0f), ref triViewed, ref clipped[0], ref clipped[1]);
+
+                    // We may end up with multiple triangles form the clip, so project as
+                    // required
+                    for (int n = 0; n < nClippedTriangles; n++)
+                    {
+                        // Project triangles from 3D --> 2D
+                        // View space -> screen space
+                        Triangle triProjected = new Triangle();
+                        triProjected.p[0] = clipped[n].p[0] * matProj;
+                        triProjected.p[1] = clipped[n].p[1] * matProj;
+                        triProjected.p[2] = clipped[n].p[2] * matProj;
+                        triProjected.lum = clipped[n].lum;
+                        triProjected.drawLine0_1 = clipped[n].drawLine0_1;
+                        triProjected.drawLine1_2 = clipped[n].drawLine1_2;
+                        triProjected.drawLine2_0 = clipped[n].drawLine2_0;
+                        triProjected.t[0] = clipped[n].t[0];
+                        triProjected.t[1] = clipped[n].t[1];
+                        triProjected.t[2] = clipped[n].t[2];
+
+                        // Divide the texture coordinates by z-component to add perspective
+                        triProjected.t[0].u = triProjected.t[0].u / triProjected.p[0].w;
+                        triProjected.t[1].u = triProjected.t[1].u / triProjected.p[1].w;
+                        triProjected.t[2].u = triProjected.t[2].u / triProjected.p[2].w;
+
+                        triProjected.t[0].v = triProjected.t[0].v / triProjected.p[0].w;
+                        triProjected.t[1].v = triProjected.t[1].v / triProjected.p[1].w;
+                        triProjected.t[2].v = triProjected.t[2].v / triProjected.p[2].w;
+
+                        // Set texel depth to be reciprocal so we can get the un-normalized
+                        // coordinates back
+                        triProjected.t[0].w = 1.0f / triProjected.p[0].w;
+                        triProjected.t[1].w = 1.0f / triProjected.p[1].w;
+                        triProjected.t[2].w = 1.0f / triProjected.p[2].w;
+
+                        // Each vertex is divided by the z-component to add perspective
+                        triProjected.p[0] = triProjected.p[0] / triProjected.p[0].w;
+                        triProjected.p[1] = triProjected.p[1] / triProjected.p[1].w;
+                        triProjected.p[2] = triProjected.p[2] / triProjected.p[2].w;
+
+                        // We must invert x because our system uses a left-hand coordinate system	
+                        triProjected.p[0].x *= -1.0f;
+                        triProjected.p[1].x *= -1.0f;
+                        triProjected.p[2].x *= -1.0f;
+                        // We must invert y because pixels are drawn top-down
+                        triProjected.p[0].y *= -1.0f;
+                        triProjected.p[1].y *= -1.0f;
+                        triProjected.p[2].y *= -1.0f;
+
+                        // Projection Matrix gives results from -1 to +1 through dividing by Z
+                        // so we offset vertices to occupy the screen
+                        Vec3d vOffsetView = new Vec3d(1, 1, 0);
+                        triProjected.p[0] = triProjected.p[0] + vOffsetView;
+                        triProjected.p[1] = triProjected.p[1] + vOffsetView;
+                        triProjected.p[2] = triProjected.p[2] + vOffsetView;
+
+                        // vertices are now between 0 and 2 so we scale into view
+                        triProjected.p[0].x *= 0.5f * screenWidth;
+                        triProjected.p[0].y *= 0.5f * screenHeight;
+                        triProjected.p[1].x *= 0.5f * screenWidth;
+                        triProjected.p[1].y *= 0.5f * screenHeight;
+                        triProjected.p[2].x *= 0.5f * screenWidth;
+                        triProjected.p[2].y *= 0.5f * screenHeight;
+
+                        // Store triangle for sorting
+                        vecTrianglesToRaster.Add(triProjected);
+                    }
+                }
+            }
             public Color GetColor(float lum)
             {
                 // converts the luminance back to argb values
@@ -988,128 +1398,21 @@ namespace _3DModeler
                 // Store triangles for rastering later
                 List<Triangle> vecTrianglesToRaster = new List<Triangle>();
 
+                // List<Triangle> newTris = new List<Triangle>(mesh.quads.Count * 2);
+                // Prepare each triangle for drawing
+                foreach (Quadrilateral quad in mesh.quads)
+                {
+                    Triangle tri1 = new Triangle(quad.p[0], quad.p[1], quad.p[2], quad.t[0], quad.t[1], quad.t[2]);
+                    tri1.drawLine1_2 = false; 
+                    mainView.RasterizeTriangle(worldMat, matView, tri1, ref vecTrianglesToRaster);
+                    Triangle tri2 = new Triangle(quad.p[0], quad.p[2], quad.p[3], quad.t[0], quad.t[2], quad.t[3]);
+                    tri2.drawLine0_1 = false;
+                    mainView.RasterizeTriangle(worldMat, matView, tri2, ref vecTrianglesToRaster);
+                }
                 // Prepare each triangle for drawing
                 foreach (Triangle tri in mesh.tris)
                 {
-                    Triangle triTransformed = new Triangle();
-                    // World Matrix Transform
-                    triTransformed.p[0] = tri.p[0] * worldMat;
-                    triTransformed.p[1] = tri.p[1] * worldMat;
-                    triTransformed.p[2] = tri.p[2] * worldMat;
-                    triTransformed.t[0] = tri.t[0];
-                    triTransformed.t[1] = tri.t[1];
-                    triTransformed.t[2] = tri.t[2];
-
-
-                    // Calculate triangle's Normal 
-                    Vec3d normal,line1, line2;
-
-                    // Get lines on either side of triangle
-                    line1 = triTransformed.p[1] - triTransformed.p[0];
-                    line2 = triTransformed.p[2] - triTransformed.p[0];
-
-                    // Take the cross product of lines to get normal to triangle surface
-                    normal = Vector_CrossProduct(ref line1, ref line2);
-                    normal = Vector_Normalize(ref normal);
-
-                    // Get Ray from camera to triangle
-                    Vec3d vCameraRay = triTransformed.p[0] - mainView.vCamera;
-
-                    // If ray is aligned with normal then triangle is visible
-                    // if not it is culled, in other words, triangles with normals 
-                    // facing away from the camera won't be seen.
-                    // Note: Make toggleable
-                    if (Vector_DotProduct(ref normal, ref vCameraRay) < 0.0f)
-                    {
-                        // Illumination
-                        Vec3d light_direction = new Vec3d(0.0f, -1.0f, 1.0f);
-                        light_direction = Vector_Normalize(ref light_direction);
-                        // How "aligned" are light direction and triangle surface normal?
-                        // The less the triangle normal and the light direction are aligned
-                        // the dimmer the triangle. Normal and light vectors are in opposite
-                        // directions so we negate the dot product
-                        float lum = MathF.Max(0.1f, -Vector_DotProduct(ref light_direction, ref normal));
-                        triTransformed.lum = lum;
-
-                        // Convert World Space --> View Space
-                        Triangle triViewed = new Triangle();
-                        triViewed.p[0] = triTransformed.p[0] * matView;
-                        triViewed.p[1] = triTransformed.p[1] * matView;
-                        triViewed.p[2] = triTransformed.p[2] * matView;
-                        triViewed.lum = triTransformed.lum;
-                        triViewed.t[0] = triTransformed.t[0];
-                        triViewed.t[1] = triTransformed.t[1];
-                        triViewed.t[2] = triTransformed.t[2];
-
-                        // Clip the Viewed Triangle against near plane, this could form two additional
-                        // triangles.
-                        int nClippedTriangles = 0;
-                        Triangle[] clipped = new Triangle[2] { new Triangle(), new Triangle() };
-                        nClippedTriangles = mainView.Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.1f), new Vec3d(0.0f, 0.0f, 1.0f), ref triViewed, ref clipped[0], ref clipped[1]);
-
-                        // We may end up with multiple triangles form the clip, so project as
-                        // required
-                        for (int n = 0; n < nClippedTriangles; n++)
-                        {
-                            // Project triangles from 3D --> 2D
-                            // View space -> screen space
-                            Triangle triProjected = new Triangle();
-                            triProjected.p[0] = clipped[n].p[0] * mainView.matProj;
-                            triProjected.p[1] = clipped[n].p[1] * mainView.matProj;
-                            triProjected.p[2] = clipped[n].p[2] * mainView.matProj;
-                            triProjected.lum = clipped[n].lum;
-                            triProjected.t[0] = clipped[n].t[0];
-                            triProjected.t[1] = clipped[n].t[1];
-                            triProjected.t[2] = clipped[n].t[2];
-
-                            // Divide the texture coordinates by z-component to add perspective
-                            triProjected.t[0].u = triProjected.t[0].u / triProjected.p[0].w;
-                            triProjected.t[1].u = triProjected.t[1].u / triProjected.p[1].w;
-                            triProjected.t[2].u = triProjected.t[2].u / triProjected.p[2].w;
-
-                            triProjected.t[0].v = triProjected.t[0].v / triProjected.p[0].w;
-                            triProjected.t[1].v = triProjected.t[1].v / triProjected.p[1].w;
-                            triProjected.t[2].v = triProjected.t[2].v / triProjected.p[2].w;
-
-                            // Set texel depth to be reciprocal so we can get the un-normalized
-                            // coordinates back
-                            triProjected.t[0].w = 1.0f / triProjected.p[0].w;
-                            triProjected.t[1].w = 1.0f / triProjected.p[1].w;
-                            triProjected.t[2].w = 1.0f / triProjected.p[2].w;
-
-                            // Each vertex is divided by the z-component to add perspective
-                            triProjected.p[0] = triProjected.p[0] / triProjected.p[0].w;
-                            triProjected.p[1] = triProjected.p[1] / triProjected.p[1].w;
-                            triProjected.p[2] = triProjected.p[2] / triProjected.p[2].w;
-
-                            // We must invert x because our system uses a left-hand coordinate system	
-                            triProjected.p[0].x *= -1.0f;
-                            triProjected.p[1].x *= -1.0f;
-                            triProjected.p[2].x *= -1.0f;
-                            // We must invert y because pixels are drawn top-down
-                            triProjected.p[0].y *= -1.0f;
-                            triProjected.p[1].y *= -1.0f;
-                            triProjected.p[2].y *= -1.0f;
-
-                            // Projection Matrix gives results from -1 to +1 through dividing by Z
-                            // so we offset vertices to occupy the screen
-                            Vec3d vOffsetView = new Vec3d(1, 1, 0);
-                            triProjected.p[0] = triProjected.p[0] + vOffsetView;
-                            triProjected.p[1] = triProjected.p[1] + vOffsetView;
-                            triProjected.p[2] = triProjected.p[2] + vOffsetView;
-
-                            // vertices are now between 0 and 2 so we scale into view
-                            triProjected.p[0].x *= 0.5f * mainView.screenWidth;
-                            triProjected.p[0].y *= 0.5f * mainView.screenHeight;
-                            triProjected.p[1].x *= 0.5f * mainView.screenWidth;
-                            triProjected.p[1].y *= 0.5f * mainView.screenHeight;
-                            triProjected.p[2].x *= 0.5f * mainView.screenWidth;
-                            triProjected.p[2].y *= 0.5f * mainView.screenHeight;
-
-                            // Store triangle for sorting
-                            vecTrianglesToRaster.Add(triProjected);
-                        }
-                    }
+                    mainView.RasterizeTriangle(worldMat, matView, tri, ref vecTrianglesToRaster);
                 }
 
                 // Sort triangles from back to front through approximating
@@ -1193,14 +1496,22 @@ namespace _3DModeler
                     // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles to a bitmap
                     foreach (Triangle t in listTriangles)
                     {
-                        mainView.DrawTriangle(t, mesh.Texture, mesh.hasTexture, true);
+                        bool fillMesh = true;
+                        if(fillMesh)
+                            mainView.DrawTriangle(t, mesh.Texture, mesh.hasTexture, true);
                         bool wireframeMode = false;
                         if (wireframeMode)
                         {
-                            // Currently does not work properly when combined with a textured or solid mesh unless triangles are sorted first
-                            mainView.DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[1].x, (int)t.p[1].y, mainView.frame, Color.Black);
-                            mainView.DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[2].x, (int)t.p[2].y, mainView.frame, Color.Black);
-                            mainView.DrawLine((int)t.p[1].x, (int)t.p[1].y, (int)t.p[2].x, (int)t.p[2].y, mainView.frame, Color.Black);
+                            // Currently does not work properly when combined with a textured or solid mesh unless triangles are sorted first.
+                            // Triangles clipped on the edges of the screen are shown
+                            if (t.drawLine0_1)
+                                mainView.DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[1].x, (int)t.p[1].y, mainView.frame, Color.Black);
+                            
+                            if (t.drawLine1_2)
+                                mainView.DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[2].x, (int)t.p[2].y, mainView.frame, Color.Black);
+                            
+                            if (t.drawLine2_0)
+                                mainView.DrawLine((int)t.p[1].x, (int)t.p[1].y, (int)t.p[2].x, (int)t.p[2].y, mainView.frame, Color.Black);
                         }
                     }
                 }
@@ -1268,51 +1579,51 @@ namespace _3DModeler
 
         private void AddCube_Click(object sender, EventArgs e)
         {
-            // Creates a cube made from tris
-            Vec3d[] points = new Vec3d[8];
-            Mesh cube = new Mesh();
-            for (int i = 0; i < 8; i++)
-            {
-                points[i] = new Vec3d(i / 4, (i / 2) % 2, i % 2);
-            }
-
-            List<Triangle> tris = new List<Triangle>
-            {
-                new Triangle(points[1], points[3], points[2]),
-                 new Triangle(points[1], points[2], points[0]),
-                  new Triangle( points[0], points[2], points[6]),
-                  new Triangle( points[0], points[6], points[4]),
-                  new Triangle( points[1], points[0], points[4]),
-                  new Triangle( points[1], points[4], points[5]),
-                  new Triangle( points[4], points[6], points[7]),
-                  new Triangle( points[4], points[7], points[5]),
-                  new Triangle( points[2], points[3], points[7]),
-                  new Triangle( points[2], points[7], points[6]),
-                  new Triangle( points[5], points[7], points[3]),
-                  new Triangle( points[5], points[3], points[1])
-            };
-            cube.tris = tris;
-            meshes.Add(cube);
-
-            // A cube made of quadrilaterals. For future revisions
+            //// Creates a cube made from tris
+            //Vec3d[] points = new Vec3d[8];
             //Mesh cube = new Mesh();
-            //List<Quadrilateral> quads = new List<Quadrilateral>
+            //for (int i = 0; i < 8; i++)
             //{
-            //    // South
-            //    new Quadrilateral(new Vec3d(0,0,0), new Vec3d(0,1,0), new Vec3d(1,1,0), new Vec3d(1,0,0)),
-            //    // East
-            //    new Quadrilateral(new Vec3d(1,0,0), new Vec3d(1,1,0), new Vec3d(1,1,1), new Vec3d(1,0,1)),
-            //    // West
-            //    new Quadrilateral(new Vec3d(0,0,1), new Vec3d(0,1,1), new Vec3d(0,1,0), new Vec3d(0,0,0)),
-            //    // Bottom
-            //    new Quadrilateral(new Vec3d(0,0,1), new Vec3d(0,0,0), new Vec3d(1,0,0), new Vec3d(1,0,1)),
-            //    // Top
-            //    new Quadrilateral(new Vec3d(0,1,0), new Vec3d(0,1,1), new Vec3d(1,1,1), new Vec3d(1,1,0)),
-            //    // North
-            //    new Quadrilateral(new Vec3d(1,0,1), new Vec3d(1,1,1), new Vec3d(0,1,1), new Vec3d(0,0,1)),
+            //    points[i] = new Vec3d(i / 4, (i / 2) % 2, i % 2);
+            //}
+
+            //List<Triangle> tris = new List<Triangle>
+            //{
+            //    new Triangle(points[1], points[3], points[2]),
+            //     new Triangle(points[1], points[2], points[0]),
+            //      new Triangle( points[0], points[2], points[6]),
+            //      new Triangle( points[0], points[6], points[4]),
+            //      new Triangle( points[1], points[0], points[4]),
+            //      new Triangle( points[1], points[4], points[5]),
+            //      new Triangle( points[4], points[6], points[7]),
+            //      new Triangle( points[4], points[7], points[5]),
+            //      new Triangle( points[2], points[3], points[7]),
+            //      new Triangle( points[2], points[7], points[6]),
+            //      new Triangle( points[5], points[7], points[3]),
+            //      new Triangle( points[5], points[3], points[1])
             //};
-            //cube.quads = quads;
+            //cube.tris = tris;
             //meshes.Add(cube);
+
+            // A cube made of quadrilaterals.
+            Mesh cube = new Mesh();
+            List<Quadrilateral> quads = new List<Quadrilateral>
+            {
+                // South
+                new Quadrilateral(new Vec3d(0,0,0), new Vec3d(0,1,0), new Vec3d(1,1,0), new Vec3d(1,0,0)),
+                // East
+                new Quadrilateral(new Vec3d(1,0,0), new Vec3d(1,1,0), new Vec3d(1,1,1), new Vec3d(1,0,1)),
+                // West
+                new Quadrilateral(new Vec3d(0,0,1), new Vec3d(0,1,1), new Vec3d(0,1,0), new Vec3d(0,0,0)),
+                // Bottom
+                new Quadrilateral(new Vec3d(0,0,1), new Vec3d(0,0,0), new Vec3d(1,0,0), new Vec3d(1,0,1)),
+                // Top
+                new Quadrilateral(new Vec3d(0,1,0), new Vec3d(0,1,1), new Vec3d(1,1,1), new Vec3d(1,1,0)),
+                // North
+                new Quadrilateral(new Vec3d(1,0,1), new Vec3d(1,1,1), new Vec3d(0,1,1), new Vec3d(0,0,1)),
+            };
+            cube.quads = quads;
+            meshes.Add(cube);
         }
 
         // Necessary for keydown event to trigger for arrow keys
@@ -1324,53 +1635,102 @@ namespace _3DModeler
         // Basic obj file saving. Only saves vertex and face information atm
         private void saveASToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            // Can't save anything if there are no meshes
             if (meshes.Count != 0)
             {
+                // Initialize SaveFileDialog
                 SaveFileDialog saveFileDialog1 = new SaveFileDialog();
-
                 saveFileDialog1.Filter = "obj files (*.obj)|*.obj";
                 saveFileDialog1.FilterIndex = 2;
                 saveFileDialog1.RestoreDirectory = false;
 
-
+                // If a valid filename was chosen...
                 if (saveFileDialog1.ShowDialog() == DialogResult.OK)
                 {
+                    // Automatically closes file once done writing
                     using (StreamWriter outputFile = new StreamWriter(saveFileDialog1.OpenFile()))
                     {
+                        // Output comment
                         outputFile.WriteLine("# test object");
                         foreach (Mesh mesh in meshes)
                         {
-                            Dictionary<Vec3d, int> vertices = new Dictionary<Vec3d, int>();
+                            // As we loop through each polygon, we store each vertex and
+                            // its index into the pool
+                            Dictionary<Vec3d, int> indexOfVertex = new Dictionary<Vec3d, int>();                         
+                            // Stores all the faces
                             List<int[]> faces = new List<int[]>();
-                            int index = 1;
-
+                            // Pool of vertices start with an index of 1
+                            int index = 1; 
                             foreach (Triangle tri in mesh.tris)
                             {
+                                // Keeps track of the indices for each vertex of the face.
+                                // The face of a triangle consists of 3 vertices
                                 int[] face = new int[3];
-
+                                // For each vertex in the triangle...
                                 for (int i = 0; i < 3; i++)
                                 {
-                                    if (vertices.ContainsKey(tri.p[i]))
+                                    // Check whether that vertex is already in our pool of
+                                    // vertices
+                                    if (indexOfVertex.ContainsKey(tri.p[i]))
                                     {
-                                        face[i] = vertices[tri.p[i]];
+                                        // If it already exits in the pool, we get the index
+                                        // of that vertex and add it to the face
+                                        face[i] = indexOfVertex[tri.p[i]];
                                     }
                                     else
                                     {
-                                        vertices[tri.p[i]] = index;
+                                        // If we don't already have that vertex stored, then
+                                        // we store it and set its index
+                                        indexOfVertex[tri.p[i]] = index;
+                                        // We get that index of that vertex for the face and we
+                                        // increment the index for the next new vertex
+                                        face[i] = index++;
+                                    }
+                                }
+                                // Add the face to our list of faces
+                                faces.Add(face);
+                            }
+                            // Repeat above code for each quadrilateral
+                            foreach (Quadrilateral quad in mesh.quads)
+                            {
+                                // Quadrilaterals consist of 4 vertices
+                                int[] face = new int[4];
+
+                                for (int i = 0; i < 4; i++)
+                                {
+                                    if (indexOfVertex.ContainsKey(quad.p[i]))
+                                    {
+                                        face[i] = indexOfVertex[quad.p[i]];
+                                    }
+                                    else
+                                    {
+                                        indexOfVertex[quad.p[i]] = index;
                                         face[i] = index++;
                                     }
                                 }
                                 faces.Add(face);
                             }
-                            foreach (KeyValuePair<Vec3d, int> vertex in vertices)
+                            // Output the collection in standard obj format
+                            foreach (KeyValuePair<Vec3d, int> vertex in indexOfVertex)
                             {
+                                // Explicitly set 6 decimal places
                                 string output = $"v {vertex.Key.x:f6} {vertex.Key.y:f6} {vertex.Key.z:f6}";
                                 outputFile.WriteLine(output);
                             }
+                            // Output the collection in standard obj format
                             foreach (int[] face in faces)
                             {
-                                string output = $"f {face[0]} {face[1]} {face[2]}";
-                                outputFile.WriteLine(output);
+                                if (face.Length == 3)
+                                {
+                                    string output = $"f {face[0]} {face[1]} {face[2]}";
+                                    outputFile.WriteLine(output);
+
+                                }
+                                else if (face.Length == 4)
+                                {
+                                    string output = $"f {face[0]} {face[1]} {face[2]} {face[3]}";
+                                    outputFile.WriteLine(output);
+                                }
                             }
 
                         }
