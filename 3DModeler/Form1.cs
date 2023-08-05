@@ -1,7 +1,9 @@
+using System;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 using static _3DModeler.Operations;
 
 namespace _3DModeler
@@ -181,7 +183,7 @@ namespace _3DModeler
                         if (line[0] == 'm')
                         {
                             string[] name = line.Split(' ');
-                            materialName = name[1];
+                            materialName = String.Join(" ", name.Skip(1).ToArray());
                             hasMaterial = true;
                         }
                         if (!hasMaterial)
@@ -287,7 +289,7 @@ namespace _3DModeler
                         if (line[0] == 'm')
                         {
                             string[] texName = line.Split(' ');
-                            texturePath = texName[1];
+                            texturePath = String.Join(" ", texName.Skip(1).ToArray());
                             hasTexture = true;
                         }
                     }
@@ -415,9 +417,9 @@ namespace _3DModeler
 
                     // Copy appearance info to new triangle
                     out_tri1.lum = in_tri.lum;
-                    //out_tri1.drawline0_1 = in_tri.drawline0_1;
-                    //out_tri1.drawline1_2 = in_tri.drawline1_2;
-                    //out_tri1.drawline2_0 = in_tri.drawline2_0;
+                    //out_tri1.drawLine0_1 = in_tri.drawLine0_1;
+                    //out_tri1.drawLine1_2 = in_tri.drawLine1_2;
+                    //out_tri1.drawLine2_0 = in_tri.drawLine2_0;
 
 
                     // The inside point is valid, so keep that...
@@ -437,7 +439,7 @@ namespace _3DModeler
                     out_tri1.t[2].v = t * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v;
                     out_tri1.t[2].w = t * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w;
 
-                    // out_tri1.drawline2_0 = false;
+                    //out_tri1.drawLine2_0 = false;
 
                     return 1; // Return the newly formed single triangle
                 }
@@ -449,14 +451,14 @@ namespace _3DModeler
 
                     // Copy appearance info to new triangles
                     out_tri1.lum = in_tri.lum;
-                    //out_tri1.drawline0_1 = in_tri.drawline0_1;
-                    //out_tri1.drawline1_2 = in_tri.drawline1_2;
-                    //out_tri1.drawline2_0 = in_tri.drawline2_0;
+                    //out_tri1.drawLine0_1 = in_tri.drawLine0_1;
+                    //out_tri1.drawLine1_2 = in_tri.drawLine1_2;
+                    //out_tri1.drawLine2_0 = in_tri.drawLine2_0;
 
                     out_tri2.lum = in_tri.lum;
-                    //out_tri2.drawline0_1 = in_tri.drawline0_1;
-                    //out_tri2.drawline1_2 = in_tri.drawline1_2;
-                    //out_tri2.drawline2_0 = in_tri.drawline2_0;
+                    //out_tri2.drawLine0_1 = in_tri.drawLine0_1;
+                    //out_tri2.drawLine1_2 = in_tri.drawLine1_2;
+                    //out_tri2.drawLine2_0 = in_tri.drawLine2_0;
 
                     // The first triangle consists of the two inside points and a new
                     // point determined by the location where one side of the triangle
@@ -471,7 +473,7 @@ namespace _3DModeler
                     out_tri1.t[2].u = t * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
                     out_tri1.t[2].v = t * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
                     out_tri1.t[2].w = t * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
-                    // out_tri1.drawline2_0 = false;
+                    //out_tri1.drawLine2_0 = false;
 
                     // The second triangle is composed of one of he inside points, a
                     // new point determined by the intersection of the other side of the 
@@ -484,7 +486,7 @@ namespace _3DModeler
                     out_tri2.t[2].u = t * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u;
                     out_tri2.t[2].v = t * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v;
                     out_tri2.t[2].w = t * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w;
-                    // out_tri2.drawline0_1 = false;
+                    //out_tri2.drawLine0_1 = false;
                     return 2; // Return two newly formed triangles which form a quad
                 }
                 else
@@ -492,239 +494,6 @@ namespace _3DModeler
                     return 0;
                 }
             }
-
-            //public (int, int) Quadrilateral_ClipAgainstPlane(Vec3d plane_p, Vec3d plane_n, ref Quadrilateral in_quad, ref Quadrilateral out_quad, ref Triangle out_tri)
-            //{
-            //    // Make sure plane normal is indeed normal
-            //    plane_n = Vector_Normalize(ref plane_n);
-
-            //    // Return signed shortest distance from point to plane, plane normal must be normalized
-            //    Func<Vec3d, float> dist = (Vec3d p) =>
-            //    {
-            //        return (Vector_DotProduct(ref plane_n, ref p) - Vector_DotProduct(ref plane_n, ref plane_p));
-            //    };
-
-            //    // Create two temporary storage arrays to classify points either side of plane
-            //    // If distance sign is positive, point lies on "inside" of plane
-            //    Vec3d[] inside_points = new Vec3d[4] { new Vec3d(), new Vec3d(), new Vec3d(), new Vec3d() };
-            //    int nInsidePointCount = 0;
-            //    Vec3d[] outside_points = new Vec3d[4] { new Vec3d(), new Vec3d(), new Vec3d(), new Vec3d() };
-            //    int nOutsidePointCount = 0;
-            //    Vec2d[] inside_tex = new Vec2d[4] { new Vec2d(), new Vec2d(), new Vec2d(), new Vec2d() };
-            //    int nInsideTexCount = 0;
-            //    Vec2d[] outside_tex = new Vec2d[4] { new Vec2d(), new Vec2d(), new Vec2d(), new Vec2d() };
-            //    int nOutsideTexCount = 0;
-
-
-            //    Dictionary<Vec3d, Vec3d> nextVertex = new Dictionary<Vec3d, Vec3d>
-            //    {
-            //        { in_quad.p[0], in_quad.p[1] },
-            //        { in_quad.p[1], in_quad.p[2] },
-            //        { in_quad.p[2], in_quad.p[3] },
-            //        { in_quad.p[3], in_quad.p[0] }
-            //    };
-
-            //    Dictionary<Vec3d, Vec3d> previousVertex = new Dictionary<Vec3d, Vec3d>
-            //    {
-            //        {  in_quad.p[0], in_quad.p[3] },
-            //        {  in_quad.p[1], in_quad.p[0] },
-            //        {  in_quad.p[2], in_quad.p[1] },
-            //        {  in_quad.p[3], in_quad.p[2] }
-            //    };
-
-
-            //    Dictionary<Vec2d, Vec2d> nextTexVertex = new Dictionary<Vec2d, Vec2d>
-            //    {
-            //        { in_quad.t[0], in_quad.t[1] },
-            //        { in_quad.t[1], in_quad.t[2] },
-            //        { in_quad.t[2], in_quad.t[3] },
-            //        { in_quad.t[3], in_quad.t[0] }
-            //    };
-
-            //    Dictionary<Vec2d, Vec2d> previousTexVertex = new Dictionary<Vec2d, Vec2d>
-            //    {
-            //        {  in_quad.t[0], in_quad.t[3] },
-            //        {  in_quad.t[1], in_quad.t[0] },
-            //        {  in_quad.t[2], in_quad.t[1] },
-            //        {  in_quad.t[3], in_quad.t[2] }
-            //    };
-
-
-            //    // Get signed distance of each point in triangle to plane
-            //    float d0 = dist(in_quad.p[0]);
-            //    float d1 = dist(in_quad.p[1]);
-            //    float d2 = dist(in_quad.p[2]);
-            //    float d3 = dist(in_quad.p[3]);
-
-            //    if (d0 >= 0)
-            //    {
-            //        inside_points[nInsidePointCount++] = in_quad.p[0];
-            //        inside_tex[nInsideTexCount++] = in_quad.t[0];
-            //    }
-            //    else
-            //    {
-            //        outside_points[nOutsidePointCount++] = in_quad.p[0];
-            //        outside_tex[nOutsideTexCount++] = in_quad.t[0];
-            //    }
-            //    if (d1 >= 0)
-            //    {
-            //        inside_points[nInsidePointCount++] = in_quad.p[1];
-            //        inside_tex[nInsideTexCount++] = in_quad.t[1];
-            //    }
-            //    else
-            //    {
-            //        outside_points[nOutsidePointCount++] = in_quad.p[1];
-            //        outside_tex[nOutsideTexCount++] = in_quad.t[1];
-            //    }
-            //    if (d2 >= 0)
-            //    {
-            //        inside_points[nInsidePointCount++] = in_quad.p[2];
-            //        inside_tex[nInsideTexCount++] = in_quad.t[2];
-            //    }
-            //    else
-            //    {
-            //        outside_points[nOutsidePointCount++] = in_quad.p[2];
-            //        outside_tex[nOutsideTexCount++] = in_quad.t[2];
-            //    }
-            //    if (d3 >= 0)
-            //    {
-            //        inside_points[nInsidePointCount++] = in_quad.p[3];
-            //        inside_tex[nInsideTexCount++] = in_quad.t[3];
-            //    }
-            //    else
-            //    {
-            //        outside_points[nOutsidePointCount++] = in_quad.p[3];
-            //        outside_tex[nOutsideTexCount++] = in_quad.t[3];
-            //    }
-
-            //    // Now classify quadrilateral points, and break the input quadrilateral into 
-            //    // smaller output quadrilaterals if required. There are five possible
-            //    // outcomes...
-
-            //    if (nInsidePointCount == 0)
-            //    {
-            //        // All points lie on the outside of plane, so clip whole quadrilateral
-            //        // It ceases to exist
-
-            //        return (0, 0); // No returned triangles are valid
-            //    }
-            //    else if (nInsidePointCount == 3)
-            //    {
-            //        // All points lie on the inside of plane, so do nothing
-            //        // and allow the triangle to simply pass through
-            //        out_quad = in_quad;
-
-            //        return (1, 0); // Just the one returned original triangle is valid
-            //    }
-            //    else if (nInsidePointCount == 1 && nOutsidePointCount == 3)
-            //    {
-            //        // Triangle should be clipped. As two points lie outside
-            //        // the plane, the triangle simply becomes a smaller triangle
-
-            //        // Copy appearance info to new triangle
-            //        out_tri.lum = in_quad.lum;
-
-            //        // The inside point is valid, so keep that...
-            //        out_tri.p[0] = inside_points[0];
-            //        out_tri.t[0] = inside_tex[0];
-
-            //        // but the two new points are at the locations where the 
-            //        // original sides of the triangle (lines) intersect with the plane
-
-            //        Vec3d v1 = nextVertex[inside_points[0]];
-            //        Vec3d v2 = previousVertex[inside_points[0]];
-
-
-
-            //        float t = 0;
-            //        out_tri.p[1] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref v1, ref t);
-            //        out_tri.t[1].u = t * (nextTexVertex[inside_tex[0]].u - inside_tex[0].u) + inside_tex[0].u;
-            //        out_tri.t[1].v = t * (nextTexVertex[inside_tex[0]].v - inside_tex[0].v) + inside_tex[0].v;
-            //        out_tri.t[1].w = t * (nextTexVertex[inside_tex[0]].w - inside_tex[0].w) + inside_tex[0].w;
-
-            //        out_tri.p[2] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref v2, ref t);
-            //        out_tri.t[2].u = t * (previousTexVertex[inside_tex[0]].u - inside_tex[0].u) + inside_tex[0].u;
-            //        out_tri.t[2].v = t * (previousTexVertex[inside_tex[0]].v - inside_tex[0].v) + inside_tex[0].v;
-            //        out_tri.t[2].w = t * (previousTexVertex[inside_tex[0]].w - inside_tex[0].w) + inside_tex[0].w;
-
-            //        return (0, 1); // Return the newly formed single triangle
-            //    }
-            //    else if (nInsidePointCount == 2 && nOutsidePointCount == 2)
-            //    {
-            //        // Triangle should be clipped. As two points lie outside
-            //        // the plane, the triangle simply becomes a smaller triangle
-
-            //        // Copy appearance info to new triangle
-            //        out_quad.lum = in_quad.lum;
-
-            //        // The inside points are valid, so keep that...
-            //        out_quad.p[0] = inside_points[0];
-            //        out_quad.t[0] = inside_tex[0];
-
-            //        out_quad.p[3] = inside_points[1];
-            //        out_quad.t[3] = inside_tex[1];
-
-            //        // but the two new points are at the locations where the 
-            //        // original sides of the triangle (lines) intersect with the plane
-            //        float t = 0;
-            //        out_quad.p[1] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref outside_points[0], ref t);
-            //        out_quad.t[1].u = t * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
-            //        out_quad.t[1].v = t * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
-            //        out_quad.t[1].w = t * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
-
-            //        out_quad.p[2] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[1], ref outside_points[1], ref t);
-            //        out_quad.t[2].u = t * (outside_tex[1].u - inside_tex[1].u) + inside_tex[1].u;
-            //        out_quad.t[2].v = t * (outside_tex[1].v - inside_tex[1].v) + inside_tex[1].v;
-            //        out_quad.t[2].w = t * (outside_tex[1].w - inside_tex[1].w) + inside_tex[1].w;
-
-            //        return (1, 0); // Return the newly formed single triangle
-            //    }
-            //    else if (nInsidePointCount == 3 && nOutsidePointCount == 1)
-            //    {
-
-            //        Vec3d v1 = nextVertex[outside_points[0]];
-            //        Vec3d v2 = previousVertex[outside_points[0]];
-
-
-            //        float t = 0;
-            //        out_tri.p[0] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref outside_points[0], ref v1, ref t);
-            //        out_tri.t[0].u = t * (nextTexVertex[outside_tex[0]].u - outside_tex[0].u) + outside_tex[0].u;
-            //        out_tri.t[0].v = t * (nextTexVertex[outside_tex[0]].v - outside_tex[0].v) + outside_tex[0].v;
-            //        out_tri.t[0].w = t * (nextTexVertex[outside_tex[0]].w - outside_tex[0].w) + outside_tex[0].w;
-
-
-            //        out_tri.p[1] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref outside_points[0], ref v2, ref t);
-            //        out_tri.t[1].u = t * (previousTexVertex[outside_tex[0]].u - outside_tex[0].u) + outside_tex[0].u;
-            //        out_tri.t[1].v = t * (previousTexVertex[outside_tex[0]].v - outside_tex[0].v) + outside_tex[0].v;
-            //        out_tri.t[1].w = t * (previousTexVertex[outside_tex[0]].w - outside_tex[0].w) + outside_tex[0].w;
-
-            //        out_tri.p[2] = nextVertex[outside_points[0]];
-            //        out_tri.t[2] = nextTexVertex[outside_tex[0]];
-
-            //        out_tri.lum = in_quad.lum;
-
-
-            //        out_quad.p[0] = new Vec3d(out_tri.p[1]);
-            //        out_quad.t[0] = new Vec2d(out_tri.t[1]);
-            //        out_quad.p[1] = new Vec3d(previousVertex[outside_points[0]]);
-            //        out_quad.t[1] = new Vec2d(previousTexVertex[outside_tex[0]]);
-            //        out_quad.p[2] = new Vec3d(previousVertex[v2]);
-            //        out_quad.t[2] = new Vec2d(previousTexVertex[previousTexVertex[outside_tex[0]]]);
-            //        out_quad.p[3] = new Vec3d(nextVertex[outside_points[0]]);
-            //        out_quad.t[3] = new Vec2d(nextTexVertex[outside_tex[0]]);
-
-            //        out_quad.lum = in_quad.lum;
-
-
-            //        return (1, 1); // Return two newly formed triangles which form a quad
-            //    }
-            //    else
-            //    {
-            //        return (0, 0);
-            //    }
-            //}
-
-            // Returns a color based on an objects luminance between 0 and 1
 
             public void RasterizeTriangle(Mat4x4 worldMat, Mat4x4 matView, Triangle tri, ref List<Triangle> vecTrianglesToRaster)
             {
@@ -1017,8 +786,8 @@ namespace _3DModeler
                                 float v = (1 - tex_v / tex_w);
                                 // uv coordinates are between 0 and 1. Anything outside those values will
                                 // be wrapped through repetition 
-                                u = u >= 0 ? u % 1 : u % 1 + 1.0f;
-                                v = v >= 0 ? v % 1 : v % 1 + 1.0f;
+                                u = u >= 0 ? u % 1 : (u % 1 + 1.0f) % 1;
+                                v = v >= 0 ? v % 1 : (v % 1 + 1.0f) % 1;
                                 // Scale up texel coordinates to the height and width of the textures
                                 int w = (int)(u * texture.Width);
                                 int h = (int)(v * texture.Height);
@@ -1118,8 +887,8 @@ namespace _3DModeler
                             {
                                 float u = (tex_u / tex_w);
                                 float v = (1 - tex_v / tex_w);
-                                u = u >= 0 ? u % 1 : u % 1 + 1.0f;
-                                v = v >= 0 ? v % 1 : v % 1 + 1.0f;
+                                u = u >= 0 ? u % 1 : (u % 1 + 1.0f) % 1;
+                                v = v >= 0 ? v % 1 : (v % 1 + 1.0f) % 1;
                                 int w = (int)(u * texture.Width);
                                 int h = (int)(v * texture.Height);
                                 if (!hasTexture)
@@ -1138,6 +907,7 @@ namespace _3DModeler
                                 {
                                     if (shading)
                                     {
+
                                         Color color = texture.GetPixel(w, h);
                                         Color newCol = Color.FromArgb(255, (int)(color.R * lum), (int)(color.G * lum), (int)(color.B * lum));
                                         frame.SetPixel(j, i, newCol);
@@ -1159,14 +929,14 @@ namespace _3DModeler
             // Faster DrawLine than using Graphics.DrawLine.
             // Taken from the link below
             // https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C#
-            public void DrawLine(int x0, int y0, int x1, int y1, DirectBitmap bitmap, Color color)
+            public void DrawLine(int x0, int y0, int x1, int y1, Color color)
             {
                 int dx = Math.Abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
                 int dy = Math.Abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
                 int err = (dx > dy ? dx : -dy) / 2, e2;
                 for (; ; )
                 {
-                    bitmap.SetPixel(x0, y0, color);
+                    this.frame.SetPixel(x0, y0, color);
                     if (x0 == x1 && y0 == y1) break;
                     e2 = err;
                     if (e2 > -dx)
@@ -1186,7 +956,6 @@ namespace _3DModeler
         // A bitmap class used for efficient getting and setting of pixels
         // by A.Konzel. Taken from
         // https://stackoverflow.com/questions/24701703/c-sharp-faster-alternatives-to-setpixel-and-getpixel-for-bitmaps-for-windows-f
-        //Note: Locking and unlocking bits may work just as well
         public class DirectBitmap : IDisposable
         {
             public DirectBitmap() { }
@@ -1260,7 +1029,6 @@ namespace _3DModeler
                 Bitmap.Dispose();
                 BitsHandle.Free();
             }
-
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -1278,7 +1046,6 @@ namespace _3DModeler
 
         private void Clock_Tick(object sender, EventArgs e)
         {
-            // https://github.com/OneLoneCoder/olcPixelGameEngine/blob/147c25a018c917030e59048b5920c269ef583c50/olcPixelGameEngine.h#L3823
             // Runs paint event. Renders frame
             tock = (float)stopWatch.Elapsed.TotalSeconds;
             // Get elapsed time between the before rendering current frame and
@@ -1403,7 +1170,7 @@ namespace _3DModeler
                 foreach (Quadrilateral quad in mesh.quads)
                 {
                     Triangle tri1 = new Triangle(quad.p[0], quad.p[1], quad.p[2], quad.t[0], quad.t[1], quad.t[2]);
-                    tri1.drawLine1_2 = false; 
+                    tri1.drawLine2_0 = false; 
                     mainView.RasterizeTriangle(worldMat, matView, tri1, ref vecTrianglesToRaster);
                     Triangle tri2 = new Triangle(quad.p[0], quad.p[2], quad.p[3], quad.t[0], quad.t[2], quad.t[3]);
                     tri2.drawLine0_1 = false;
@@ -1499,19 +1266,19 @@ namespace _3DModeler
                         bool fillMesh = true;
                         if(fillMesh)
                             mainView.DrawTriangle(t, mesh.Texture, mesh.hasTexture, true);
-                        bool wireframeMode = false;
+                        bool wireframeMode = true;
                         if (wireframeMode)
                         {
                             // Currently does not work properly when combined with a textured or solid mesh unless triangles are sorted first.
                             // Triangles clipped on the edges of the screen are shown
                             if (t.drawLine0_1)
-                                mainView.DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[1].x, (int)t.p[1].y, mainView.frame, Color.Black);
+                                mainView.DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[1].x, (int)t.p[1].y, Color.Black);
                             
                             if (t.drawLine1_2)
-                                mainView.DrawLine((int)t.p[0].x, (int)t.p[0].y, (int)t.p[2].x, (int)t.p[2].y, mainView.frame, Color.Black);
+                                mainView.DrawLine((int)t.p[1].x, (int)t.p[1].y, (int)t.p[2].x, (int)t.p[2].y, Color.Black);
                             
                             if (t.drawLine2_0)
-                                mainView.DrawLine((int)t.p[1].x, (int)t.p[1].y, (int)t.p[2].x, (int)t.p[2].y, mainView.frame, Color.Black);
+                                mainView.DrawLine((int)t.p[2].x, (int)t.p[2].y, (int)t.p[0].x, (int)t.p[0].y, Color.Black);
                         }
                     }
                 }
