@@ -143,13 +143,14 @@ namespace _3DModeler
         struct Material
         {
             public Material() { }
-            public float Ns = 0;
-            public float[] Ka = new float[3];
+            public float Ns = 250;
+            public float[] Ka = new float[3] { 1, 1, 1 };
+            public float[] Kd = new float[3];
             public float[] Ks = new float[3];
             public float[] Ke = new float[3];
-            public float Ni = 0;
-            public float d = 0;
-            public int illum = 0;
+            public float Ni = 1.45f;
+            public float d = 1;
+            public int illum = 2;
             public bool hasTexture = false;
             public string texturePath = "";
             public DirectBitmap texture = new DirectBitmap();
@@ -160,6 +161,7 @@ namespace _3DModeler
         {
             Mesh mesh = new Mesh();
             mesh.name = "Default";
+            mesh.materialName = "Default";
             
             // by default
             bMaterialFile = false;
@@ -227,7 +229,7 @@ namespace _3DModeler
                         materialFileName = string.Join(" ", name.Skip(1).ToArray());
                         bMaterialFile = true;
                     }
-                    if (!bMaterialFile)
+                    if (!line.Contains('/'))
                     {
                         // If the line begins with 'f' it specifies the indices into each list
                         // of the vertex and texel coordinates for the face
@@ -323,7 +325,7 @@ namespace _3DModeler
 
         // Loads the material file associated with the object. Returns true if successful
         // Currently only reads the texture files
-        private Dictionary<string, Material> LoadMaterialsFromFile(string sFilename)
+        private Dictionary<string, Material> LoadMaterialsFromFile(string sFilename, string folderPath)
         {
             Dictionary<string, Material> object_Material = new Dictionary<string, Material>();
             string matName = "";
@@ -350,7 +352,26 @@ namespace _3DModeler
                     {
                         string[] texName = line.Split(' ');
                         material.texturePath = string.Join(" ", texName.Skip(1).ToArray());
-                        material.hasTexture = true;
+                        try
+                        {
+                            // Look for image via an absolute path
+                            material.texture = new DirectBitmap(material.texturePath);
+                            material.hasTexture = true;
+                        }
+                        catch (ArgumentException)
+                        {
+                            try
+                            {
+                                // Look for image via a relative path
+                                material.texture = new DirectBitmap(Path.Combine(folderPath, material.texturePath));
+                                material.hasTexture = true;
+                            }
+                            catch (ArgumentException)
+                            {
+                                MessageBox.Show($"Could not load texture file {material.texturePath}");
+                            }
+                        }
+
                     }
                     if (line[0] == 'N')
                     {
@@ -404,30 +425,6 @@ namespace _3DModeler
             object_Material[matName] = material;
             object_Material.Remove("");
             return object_Material;
-        }
-
-        private Material LoadTextureFromFile(Material mat, string directoryPath)
-        {
-            try
-            {
-                // Look for image via an absolute path
-                mat.texture = new DirectBitmap(mat.texturePath);
-                mat.hasTexture = true;
-            }
-            catch (ArgumentException)
-            {
-                try
-                {
-                    // Look for image via a relative path
-                    mat.texture = new DirectBitmap(Path.Combine(directoryPath, mat.texturePath));
-                    mat.hasTexture = true;
-                }
-                catch (ArgumentException)
-                {
-                    MessageBox.Show("Could not load texture");
-                }
-            }            
-            return mat;
         }
 
         // A class that contains all the information regarding the current view into the world
@@ -1440,11 +1437,7 @@ namespace _3DModeler
                     if (hasMaterial)
                     {
                         string materialPath = Path.Combine(folderPath, materialName);
-                        var d = LoadMaterialsFromFile(materialPath);
-                        foreach (var pair in d)
-                        {
-                            d[pair.Key] = LoadTextureFromFile(pair.Value, folderPath);
-                        }
+                        var d = LoadMaterialsFromFile(materialPath, folderPath);
                         for(int i = 0; i < meshes.Count; i++)
                         {
                             Mesh newMesh = meshes[i];
@@ -1474,24 +1467,34 @@ namespace _3DModeler
                 if (saveFileDialog1.ShowDialog() == DialogResult.OK)
                 {
                     // Automatically closes file once done writing
+                    string diPath = Path.GetDirectoryName(saveFileDialog1.FileName);
+                    string path = Path.GetFileNameWithoutExtension(saveFileDialog1.FileName);
+                    string name = Path.GetFileName(path);
                     using (StreamWriter outputFile = new StreamWriter(saveFileDialog1.OpenFile()))
                     {
                         // Output comment
-                        outputFile.WriteLine("# test object");
+                        outputFile.WriteLine("# test");
+                        outputFile.WriteLine($"mtllib {name}.mtl");
+                        // Pool of vertices start with an index of 1
+                        int vIndex = 1;
+                        int tIndex = 1;
                         foreach (Mesh mesh in meshes)
                         {
                             // As we loop through each polygon, we store each vertex and
                             // its index into the pool
                             Dictionary<Vec3D, int> indexOfVertex = new Dictionary<Vec3D, int>();
+                            Dictionary<Vec2D, int> indexOfTexel = new Dictionary<Vec2D, int>();
                             // Stores all the faces
-                            List<int[]> faces = new List<int[]>();
-                            // Pool of vertices start with an index of 1
-                            int index = 1;
+                            List<int[]> vFaces = new List<int[]>();
+                            List<int[]> tFaces = new List<int[]>();
+                            outputFile.WriteLine($"o {mesh.name}");
+
                             foreach (Triangle tri in mesh.tris)
                             {
                                 // Keeps track of the indices for each vertex of the face.
                                 // The face of a triangle consists of 3 vertices
-                                int[] face = new int[3];
+                                int[] vFace = new int[3];
+                                int[] tFace = new int[3];
                                 // For each vertex in the triangle...
                                 for (int i = 0; i < 3; i++)
                                 {
@@ -1501,41 +1504,69 @@ namespace _3DModeler
                                     {
                                         // If it already exits in the pool, we get the index
                                         // of that vertex and add it to the face
-                                        face[i] = indexOfVertex[tri.p[i]];
+                                        vFace[i] = indexOfVertex[tri.p[i]];
                                     }
                                     else
                                     {
                                         // If we don't already have that vertex stored, then
                                         // we store it and set its index
-                                        indexOfVertex[tri.p[i]] = index;
+                                        indexOfVertex[tri.p[i]] = vIndex;
                                         // We get that index of that vertex for the face and we
                                         // increment the index for the next new vertex
-                                        face[i] = index++;
+                                        vFace[i] = vIndex++;
+                                    }
+                                    if (indexOfTexel.ContainsKey(tri.t[i]))
+                                    {
+                                        // If it already exits in the pool, we get the index
+                                        // of that vertex and add it to the face
+                                        tFace[i] = indexOfTexel[tri.t[i]];
+                                    }
+                                    else
+                                    {
+                                        // If we don't already have that vertex stored, then
+                                        // we store it and set its index
+                                        indexOfTexel[tri.t[i]] = tIndex;
+                                        // We get that index of that vertex for the face and we
+                                        // increment the index for the next new vertex
+                                        tFace[i] = tIndex++;
                                     }
                                 }
                                 // Add the face to our list of faces
-                                faces.Add(face);
+                                vFaces.Add(vFace);
+                                tFaces.Add(tFace);
                             }
                             // Repeat above code for each quadrilateral
                             foreach (Quadrilateral quad in mesh.quads)
                             {
                                 // Quadrilaterals consist of 4 vertices
-                                int[] face = new int[4];
+                                int[] vFace = new int[4];
+                                int[] tFace = new int[4];
 
                                 for (int i = 0; i < 4; i++)
                                 {
                                     if (indexOfVertex.ContainsKey(quad.p[i]))
                                     {
-                                        face[i] = indexOfVertex[quad.p[i]];
+                                        vFace[i] = indexOfVertex[quad.p[i]];
                                     }
                                     else
                                     {
-                                        indexOfVertex[quad.p[i]] = index;
-                                        face[i] = index++;
+                                        indexOfVertex[quad.p[i]] = vIndex;
+                                        vFace[i] = vIndex++;
+                                    }
+                                    if (indexOfTexel.ContainsKey(quad.t[i]))
+                                    {
+                                        tFace[i] = indexOfTexel[quad.t[i]];
+                                    }
+                                    else
+                                    {
+                                        indexOfTexel[quad.t[i]] = tIndex;
+                                        tFace[i] = tIndex++;
                                     }
                                 }
-                                faces.Add(face);
+                                vFaces.Add(vFace);
+                                tFaces.Add(tFace);
                             }
+
                             // Output the collection in standard obj format
                             foreach (KeyValuePair<Vec3D, int> vertex in indexOfVertex)
                             {
@@ -1543,22 +1574,84 @@ namespace _3DModeler
                                 string output = $"v {vertex.Key.x:f6} {vertex.Key.y:f6} {vertex.Key.z:f6}";
                                 outputFile.WriteLine(output);
                             }
-                            // Output the collection in standard obj format
-                            foreach (int[] face in faces)
+                            if(mesh.material.hasTexture)
                             {
-                                if (face.Length == 3)
+                                foreach (KeyValuePair<Vec2D, int> texel in indexOfTexel)
                                 {
-                                    string output = $"f {face[0]} {face[1]} {face[2]}";
-                                    outputFile.WriteLine(output);
-
-                                }
-                                else if (face.Length == 4)
-                                {
-                                    string output = $"f {face[0]} {face[1]} {face[2]} {face[3]}";
+                                    // Explicitly set 6 decimal places
+                                    string output = $"vt {texel.Key.u:f6} {texel.Key.v:f6}";
                                     outputFile.WriteLine(output);
                                 }
                             }
+                            outputFile.WriteLine($"usemtl {mesh.materialName}");
 
+                            // Output the collection in standard obj format
+                            if(mesh.material.hasTexture)
+                            {
+                                for(int i = 0; i < vFaces.Count; i++)
+                                {
+                                    if (vFaces[i].Length == 3)
+                                    {
+                                        string output = $"f {vFaces[i][0]}/{tFaces[i][0]} {vFaces[i][1]}/{tFaces[i][1]} {vFaces[i][2]}/{tFaces[i][2]}";
+                                        outputFile.WriteLine(output);
+
+                                    }
+                                    else if (vFaces[i].Length == 4)
+                                    {
+                                        string output = $"f {vFaces[i][0]}/{tFaces[i][0]} {vFaces[i][1]}/{tFaces[i][1]} {vFaces[i][2]}/{tFaces[i][2]} {vFaces[i][3]}/{tFaces[i][3]}";
+                                        outputFile.WriteLine(output);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                foreach (int[] face in vFaces)
+                                {
+                                    if (face.Length == 3)
+                                    {
+                                        string output = $"f {face[0]} {face[1]} {face[2]}";
+                                        outputFile.WriteLine(output);
+
+                                    }
+                                    else if (face.Length == 4)
+                                    {
+                                        string output = $"f {face[0]} {face[1]} {face[2]} {face[3]}";
+                                        outputFile.WriteLine(output);
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+
+                    // Write material file
+
+                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(diPath, path + ".mtl")))
+                    {
+                        // Output comment
+                        outputFile.WriteLine("# test");
+                        // Duplicate material can be written ATM
+                        foreach (Mesh mesh in meshes)
+                        {
+                            outputFile.WriteLine();
+                            outputFile.WriteLine($"newmtl {mesh.materialName}");
+                            outputFile.WriteLine($"Ns {mesh.material.Ns:f6}");
+                            outputFile.WriteLine($"Ka {mesh.material.Ka[0]:f6} {mesh.material.Ka[1]:f6} {mesh.material.Ka[2]:f6}");
+                            outputFile.WriteLine($"Ks {mesh.material.Ks[0]:f6} {mesh.material.Ks[1]:f6} {mesh.material.Ks[2]:f6}");
+                            outputFile.WriteLine($"Ke {mesh.material.Ke[0]:f6} {mesh.material.Ke[1]:f6} {mesh.material.Ke[2]:f6}");
+                            outputFile.WriteLine($"Ni {mesh.material.Ni:f6}");
+                            outputFile.WriteLine($"d {mesh.material.d:f6}");
+                            outputFile.WriteLine($"illum {mesh.material.illum}");
+                            if(mesh.material.hasTexture)
+                            {
+                                outputFile.WriteLine($"map_Kd {mesh.material.texturePath}");
+                                string d = Path.Combine(diPath, mesh.material.texturePath);
+                                if(!File.Exists(Path.Combine(diPath, mesh.material.texturePath)))
+                                {
+                                    mesh.material.texture.Bitmap.Save(Path.Combine(diPath, mesh.material.texturePath));
+                                }
+                                
+                            }                            
                         }
 
                     }
@@ -1633,6 +1726,7 @@ namespace _3DModeler
             };
             cube.quads = quads;
             cube.name = "Cube" + meshes.Count;
+            cube.materialName = "Cube" + meshes.Count;
             meshes.Add(cube);
         }
 
