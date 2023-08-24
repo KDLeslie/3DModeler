@@ -126,189 +126,308 @@ namespace _3DModeler
         {
             public Mesh() { }
 
+            public string name = ""; // Used to identify different meshes
+
+            public string materialName = "";
+
             public List<Triangle> tris = new List<Triangle>();
 
             public List<Quadrilateral> quads = new List<Quadrilateral>();
 
-            public DirectBitmap Texture = new DirectBitmap();
+            //public DirectBitmap Texture = new DirectBitmap();
+            public bool hasMaterial = false;
 
+            public Material material = new Material();
+        }
+
+        struct Material
+        {
+            public Material() { }
+            public float Ns = 0;
+            public float[] Ka = new float[3];
+            public float[] Ks = new float[3];
+            public float[] Ke = new float[3];
+            public float Ni = 0;
+            public float d = 0;
+            public int illum = 0;
             public bool hasTexture = false;
-            // Loads an object from a file
-            // Returns true if successful
-            // Currently only supports files with a single object
-            public bool LoadObjectFromFile(string sFilename, ref string materialName, ref bool hasMaterial)
+            public string texturePath = "";
+            public DirectBitmap texture = new DirectBitmap();
+        }
+
+
+        public bool LoadObjectsFromFile(string sFilename, ref bool bMaterialFile, ref string materialFileName)
+        {
+            Mesh mesh = new Mesh();
+            mesh.name = "Default";
+            
+            // by default
+            bMaterialFile = false;
+            materialFileName = "";
+
+            // Create an instance of StreamReader to read from a file
+            // The using statement also closes the StreamReader
+            using (StreamReader sr = new StreamReader(sFilename))
             {
-                // by default
-                hasMaterial = false;
-                materialName = "";
-
-                // Create an instance of StreamReader to read from a file
-                // The using statement also closes the StreamReader
-                using (StreamReader sr = new StreamReader(sFilename))
+                // Store the vertices to be indexed through 
+                List<Vec3D> verts = new List<Vec3D>();
+                List<Vec2D> texs = new List<Vec2D>();
+                string? line;
+                // Read lines from the file until the end of the file is reached
+                while ((line = sr.ReadLine()) != null)
                 {
-                    // Store the vertices to be indexed through 
-                    List<Vec3D> verts = new List<Vec3D>();
-                    List<Vec2D> texs = new List<Vec2D>();
-                    string? line;
-                    // Read lines from the file until the end of the file is reached
-                    while ((line = sr.ReadLine()) != null)
+                    // Catch any empty lines
+                    if (line.Length == 0)
+                        continue;
+
+                    if (line[0] == 'o')
                     {
-                        // Catch any empty lines
-                        if (line.Length == 0)
-                            continue;
+                        meshes.Add(mesh);
+                        mesh = new Mesh();
+                        string[] n = line.Split(' ');
+                        mesh.name = n[1];
+                    }
+                    if (line[0] == 'u')
+                    {
+                        string[] n = line.Split(' ');
+                        mesh.materialName = n[1];
+                    }
+                    if (line[0] == 'v')
+                    {
+                        // information is space separated
+                        string[] coords = line.Split(' ');
+                        // If the line begins with 'vt' it contains texel coordinates
+                        if (line[1] == 't')
+                        {
+                            Vec2D vec = new Vec2D
+                            {
+                                // 0th coord is junk character
+                                u = float.Parse(coords[1]),
+                                v = float.Parse(coords[2])
+                            };
+                            texs.Add(vec);
 
-                        if (line[0] == 'v')
-                        {
-                            // information is space separated
-                            string[] coords = line.Split(' ');
-                            // If the line begins with 'vt' it contains texel coordinates
-                            if (line[1] == 't')
-                            {
-                                Vec2D vec = new Vec2D
-                                {
-                                    // 0th coord is junk character
-                                    u = float.Parse(coords[1]),
-                                    v = float.Parse(coords[2])
-                                };
-                                texs.Add(vec);
-
-                            }
-                            // If the line begins with 'v' it contains vertex coordinates
-                            else
-                            {
-                                Vec3D vec = new Vec3D
-                                {
-                                    x = float.Parse(coords[1]),
-                                    y = float.Parse(coords[2]),
-                                    z = float.Parse(coords[3])
-                                };
-                                verts.Add(vec);
-                            }
                         }
-                        // If the line begins with 'm' it specifies the material settings file
-                        if (line[0] == 'm')
-                        {
-                            string[] name = line.Split(' ');
-                            materialName = String.Join(" ", name.Skip(1).ToArray());
-                            hasMaterial = true;
-                        }
-                        if (!hasMaterial)
-                        {
-                            // If the line begins with 'f' it specifies the indices into each list
-                            // of the vertex and texel coordinates for the face
-                            if (line[0] == 'f')
-                            {
-                                string[] indices = line.Split(' ');
-                                if (indices.Length == 4)
-                                {
-                                    Triangle triangle = new Triangle();
-                                    // Index through pool of vertices to get the ones corresponding
-                                    // to this face
-                                    // obj files use 1 indexing so our indices are off by 1
-                                    triangle.p[0] = verts[int.Parse(indices[1]) - 1];
-                                    triangle.p[1] = verts[int.Parse(indices[2]) - 1];
-                                    triangle.p[2] = verts[int.Parse(indices[3]) - 1];
-                                    tris.Add(triangle);
-                                }
-                                else if (indices.Length == 5)
-                                {
-                                    Quadrilateral quadrilateral = new Quadrilateral();
-                                    // Index through pool of vertices to get the ones corresponding
-                                    // to this face
-                                    // obj files use 1 indexing so our indices are off by 1
-                                    quadrilateral.p[0] = verts[int.Parse(indices[1]) - 1];
-                                    quadrilateral.p[1] = verts[int.Parse(indices[2]) - 1];
-                                    quadrilateral.p[2] = verts[int.Parse(indices[3]) - 1];
-                                    quadrilateral.p[3] = verts[int.Parse(indices[4]) - 1];
-                                    quads.Add(quadrilateral);
-                                }
-                            }
-                        }
+                        // If the line begins with 'v' it contains vertex coordinates
                         else
                         {
-                            if (line[0] == 'f')
+                            Vec3D vec = new Vec3D
                             {
-                                string[] indexPairs = line.Split(' ');
-                                if (indexPairs.Length == 4)
+                                x = float.Parse(coords[1]),
+                                y = float.Parse(coords[2]),
+                                z = float.Parse(coords[3])
+                            };
+                            verts.Add(vec);
+                        }
+                    }
+                    // If the line begins with 'm' it specifies the material settings file
+                    if (line[0] == 'm')
+                    {
+                        string[] name = line.Split(' ');
+                        materialFileName = string.Join(" ", name.Skip(1).ToArray());
+                        bMaterialFile = true;
+                    }
+                    if (!bMaterialFile)
+                    {
+                        // If the line begins with 'f' it specifies the indices into each list
+                        // of the vertex and texel coordinates for the face
+                        if (line[0] == 'f')
+                        {
+                            string[] indices = line.Split(' ');
+                            if (indices.Length == 4)
+                            {
+                                Triangle triangle = new Triangle();
+                                // Index through pool of vertices to get the ones corresponding
+                                // to this face
+                                // obj files use 1 indexing so our indices are off by 1
+                                triangle.p[0] = verts[int.Parse(indices[1]) - 1];
+                                triangle.p[1] = verts[int.Parse(indices[2]) - 1];
+                                triangle.p[2] = verts[int.Parse(indices[3]) - 1];
+                                mesh.tris.Add(triangle);
+                            }
+                            else if (indices.Length == 5)
+                            {
+                                Quadrilateral quadrilateral = new Quadrilateral();
+                                // Index through pool of vertices to get the ones corresponding
+                                // to this face
+                                // obj files use 1 indexing so our indices are off by 1
+                                quadrilateral.p[0] = verts[int.Parse(indices[1]) - 1];
+                                quadrilateral.p[1] = verts[int.Parse(indices[2]) - 1];
+                                quadrilateral.p[2] = verts[int.Parse(indices[3]) - 1];
+                                quadrilateral.p[3] = verts[int.Parse(indices[4]) - 1];
+                                mesh.quads.Add(quadrilateral);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (line[0] == 'f')
+                        {
+                            string[] indexPairs = line.Split(' ');
+                            if (indexPairs.Length == 4)
+                            {
+                                // Temporary arrays to store the indices for the vertices and texels
+                                int[] p = new int[3];
+                                int[] t = new int[3];
+                                for (int i = 0; i < 3; i++)
                                 {
-                                    // Temporary arrays to store the indices for the vertices and texels
-                                    int[] p = new int[3];
-                                    int[] t = new int[3];
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        // Vertex and texel indices are separated bt '/' 
-                                        string[] p_t = indexPairs[i + 1].Split('/');
-                                        p[i] = int.Parse(p_t[0]);
-                                        t[i] = int.Parse(p_t[1]);
-                                    }
-                                    Triangle triangle = new Triangle();
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        triangle.p[i] = verts[p[i] - 1];
-                                        triangle.t[i] = texs[t[i] - 1];
-                                    }
-                                    tris.Add(triangle);
+                                    // Vertex and texel indices are separated bt '/' 
+                                    string[] p_t = indexPairs[i + 1].Split('/');
+                                    p[i] = int.Parse(p_t[0]);
+                                    t[i] = int.Parse(p_t[1]);
                                 }
-                                else if (indexPairs.Length == 5)
+                                Triangle triangle = new Triangle();
+                                for (int i = 0; i < 3; i++)
                                 {
-                                    // Temporary arrays to store the indices for the vertices and texels
-                                    int[] p = new int[4];
-                                    int[] t = new int[4];
-                                    for (int i = 0; i < 4; i++)
-                                    {
-                                        // Vertex and texel indices are separated bt '/' 
-                                        string[] p_t = indexPairs[i + 1].Split('/');
-                                        p[i] = int.Parse(p_t[0]);
-                                        t[i] = int.Parse(p_t[1]);
-                                    }
-                                    Quadrilateral quadrilateral = new Quadrilateral();
-                                    for (int i = 0; i < 4; i++)
-                                    {
-                                        quadrilateral.p[i] = verts[p[i] - 1];
-                                        quadrilateral.t[i] = texs[t[i] - 1];
-                                    }
-                                    quads.Add(quadrilateral);
+                                    triangle.p[i] = verts[p[i] - 1];
+                                    triangle.t[i] = texs[t[i] - 1];
                                 }
-
+                                mesh.tris.Add(triangle);
+                            }
+                            else if (indexPairs.Length == 5)
+                            {
+                                // Temporary arrays to store the indices for the vertices and texels
+                                int[] p = new int[4];
+                                int[] t = new int[4];
+                                for (int i = 0; i < 4; i++)
+                                {
+                                    // Vertex and texel indices are separated bt '/' 
+                                    string[] p_t = indexPairs[i + 1].Split('/');
+                                    p[i] = int.Parse(p_t[0]);
+                                    t[i] = int.Parse(p_t[1]);
+                                }
+                                Quadrilateral quadrilateral = new Quadrilateral();
+                                for (int i = 0; i < 4; i++)
+                                {
+                                    quadrilateral.p[i] = verts[p[i] - 1];
+                                    quadrilateral.t[i] = texs[t[i] - 1];
+                                }
+                                mesh.quads.Add(quadrilateral);
                             }
 
                         }
+
                     }
                 }
-                return true;
             }
 
-            // Loads the material file associated with the object. Returns true if successful
-            // Currently only reads the texture file
-            public bool LoadMaterialFromFile(string sFilename, ref string texturePath, ref bool hasTexture)
+            meshes.Add(mesh);
+            // A mesh does not contain the line "o" if there is only one mesh. Thus
+            // We cannot remove the first mesh in that case since it contains the actual mesh
+            if(meshes.Count > 1 ) 
             {
-                hasTexture = false;
-                using (StreamReader sr = new StreamReader(sFilename))
+                meshes.RemoveAt(0);
+            }            
+            return true;
+        }
+
+        // Loads the material file associated with the object. Returns true if successful
+        // Currently only reads the texture files
+        private Dictionary<string, Material> LoadMaterialsFromFile(string sFilename)
+        {
+            Dictionary<string, Material> object_Material = new Dictionary<string, Material>();
+            string matName = "";
+            Material material = new Material();
+            using (StreamReader sr = new StreamReader(sFilename))
+            {
+                string? line;
+                while ((line = sr.ReadLine()) != null)
                 {
-                    string? line;
-                    while ((line = sr.ReadLine()) != null)
+                    // catches empty lines
+                    if (line.Length == 0)
+                        continue;
+                    // Specifies the texture file for the object
+                    if (line[0] == 'n')
                     {
-                        // catches empty lines
-                        if (line.Length == 0)
-                            continue;
-                        // Specifies the texture file for the object
-                        if (line[0] == 'm')
+                        object_Material[matName] = material;
+                        matName = "";
+                        material = new Material();
+
+                        string[] n = line.Split(' ');
+                        matName = n[1];
+                    }
+                    if (line[0] == 'm')
+                    {
+                        string[] texName = line.Split(' ');
+                        material.texturePath = string.Join(" ", texName.Skip(1).ToArray());
+                        material.hasTexture = true;
+                    }
+                    if (line[0] == 'N')
+                    {
+                        if (line[1] == 's')
                         {
-                            string[] texName = line.Split(' ');
-                            texturePath = string.Join(" ", texName.Skip(1).ToArray());
-                            hasTexture = true;
+                            string[] n = line.Split(' ');
+                            material.Ns = float.Parse(n[1]);
+                        }
+                        if (line[1] == 'i')
+                        {
+                            string[] n = line.Split(' ');
+                            material.Ni = float.Parse(n[1]);
                         }
                     }
+                    if (line[0] == 'K')
+                    {
+                        if (line[1] == 'a')
+                        {
+                            string[] n = line.Split(' ');
+                            material.Ka[0] = float.Parse(n[1]);
+                            material.Ka[1] = float.Parse(n[2]);
+                            material.Ka[2] = float.Parse(n[3]);
+                        }
+                        if (line[1] == 's')
+                        {
+                            string[] n = line.Split(' ');
+                            material.Ks[0] = float.Parse(n[1]);
+                            material.Ks[1] = float.Parse(n[2]);
+                            material.Ks[2] = float.Parse(n[3]);
+                        }
+                        if (line[1] == 'e')
+                        {
+                            string[] n = line.Split(' ');
+                            material.Ke[0] = float.Parse(n[1]);
+                            material.Ke[1] = float.Parse(n[2]);
+                            material.Ke[2] = float.Parse(n[3]);
+                        }
+                    }
+                    if (line[0] == 'd')
+                    {
+                        string[] n = line.Split(' ');
+                        material.d = float.Parse(n[1]);
+                    }
+                    if (line[0] == 'i')
+                    {
+                        string[] n = line.Split(' ');
+                        material.illum = int.Parse(n[1]);
+                    }
                 }
-                return true;
             }
+            object_Material[matName] = material;
+            object_Material.Remove("");
+            return object_Material;
+        }
 
-            // Loads texture file. Returns true if successful
-            public bool LoadTextureFromFile(string sFilename)
+        private Material LoadTextureFromFile(Material mat, string directoryPath)
+        {
+            try
             {
-                Texture = new DirectBitmap(sFilename);
-                return true;
+                // Look for image via an absolute path
+                mat.texture = new DirectBitmap(mat.texturePath);
+                mat.hasTexture = true;
             }
+            catch (ArgumentException)
+            {
+                try
+                {
+                    // Look for image via a relative path
+                    mat.texture = new DirectBitmap(Path.Combine(directoryPath, mat.texturePath));
+                    mat.hasTexture = true;
+                }
+                catch (ArgumentException)
+                {
+                    MessageBox.Show("Could not load texture");
+                }
+            }            
+            return mat;
         }
 
         // A class that contains all the information regarding the current view into the world
@@ -1259,7 +1378,7 @@ namespace _3DModeler
                     foreach (Triangle t in listTriangles)
                     {
                         if (solidToolStripMenuItem.Checked)
-                            mainView.DrawTriangle(t, mesh.Texture, mesh.hasTexture & TextureToolStripMenuItem.Checked, ShadingToolStripMenuItem.Checked);
+                            mainView.DrawTriangle(t, mesh.material.texture, mesh.material.hasTexture & TextureToolStripMenuItem.Checked, ShadingToolStripMenuItem.Checked);
                         if (WireframeToolStripMenuItem.Checked)
                         {
                             // Currently does not work properly when combined with a textured or solid mesh unless triangles are sorted first.
@@ -1277,6 +1396,7 @@ namespace _3DModeler
                 }
             }
 
+            // Potentially speeds up rendering
             e.Graphics.CompositingMode = CompositingMode.SourceCopy;
             e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
 
@@ -1313,29 +1433,27 @@ namespace _3DModeler
 
                     string filePath = openFileDialog.FileName;
                     string[] subPaths = filePath.Split('\\');
-                    string folderPath = String.Join("\\", subPaths.SkipLast(1).ToArray());
+                    string folderPath = string.Join("\\", subPaths.SkipLast(1).ToArray());
                     string materialName = "";
-                    string texturePath = "";
                     bool hasMaterial = false;
-                    bool hasTexture = false;
-                    Mesh meshCube = new Mesh();
-                    meshCube.LoadObjectFromFile(filePath, ref materialName, ref hasMaterial);
+                    LoadObjectsFromFile(filePath, ref hasMaterial, ref materialName);
                     if (hasMaterial)
                     {
                         string materialPath = Path.Combine(folderPath, materialName);
-                        meshCube.LoadMaterialFromFile(materialPath, ref texturePath, ref hasTexture);
-                        if (hasTexture)
+                        var d = LoadMaterialsFromFile(materialPath);
+                        foreach (var pair in d)
                         {
-                            texturePath = texturePath.Replace("/", "\\");
-                            meshCube.LoadTextureFromFile(texturePath);
-                            meshCube.hasTexture = true;
+                            d[pair.Key] = LoadTextureFromFile(pair.Value, folderPath);
+                        }
+                        for(int i = 0; i < meshes.Count; i++)
+                        {
+                            Mesh newMesh = meshes[i];
+                            newMesh.material = d[newMesh.materialName];
+                            newMesh.hasMaterial = true;
+                            meshes[i] = newMesh;
                         }
                     }
-                    else
-                    {
-                        meshCube.hasTexture = false;
-                    }
-                    meshes.Add(meshCube);
+                        
                 }
             }
         }
@@ -1455,7 +1573,7 @@ namespace _3DModeler
 
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
-            // Updates the 
+            // Updates the viewport with the form
             mainView.screenWidth = Viewer.Width;
             mainView.screenHeight = Viewer.Height;
             mainView.pDepthBuffer = new float[mainView.screenWidth * mainView.screenHeight];
@@ -1496,50 +1614,25 @@ namespace _3DModeler
 
         private void cubeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //// Creates a cube made from tris
-            //Vec3d[] points = new Vec3d[8];
-            //Mesh cube = new Mesh();
-            //for (int i = 0; i < 8; i++)
-            //{
-            //    points[i] = new Vec3d(i / 4, (i / 2) % 2, i % 2);
-            //}
-
-            //List<Triangle> tris = new List<Triangle>
-            //{
-            //    new Triangle(points[1], points[3], points[2]),
-            //     new Triangle(points[1], points[2], points[0]),
-            //      new Triangle( points[0], points[2], points[6]),
-            //      new Triangle( points[0], points[6], points[4]),
-            //      new Triangle( points[1], points[0], points[4]),
-            //      new Triangle( points[1], points[4], points[5]),
-            //      new Triangle( points[4], points[6], points[7]),
-            //      new Triangle( points[4], points[7], points[5]),
-            //      new Triangle( points[2], points[3], points[7]),
-            //      new Triangle( points[2], points[7], points[6]),
-            //      new Triangle( points[5], points[7], points[3]),
-            //      new Triangle( points[5], points[3], points[1])
-            //};
-            //cube.tris = tris;
-            //meshes.Add(cube);
-
             // A cube made of quadrilaterals.
             Mesh cube = new Mesh();
             List<Quadrilateral> quads = new List<Quadrilateral>
             {
+                // North
+                new Quadrilateral(new Vec3D(1,0,1), new Vec3D(1,1,1), new Vec3D(0,1,1), new Vec3D(0,0,1)),
                 // South
                 new Quadrilateral(new Vec3D(0,0,0), new Vec3D(0,1,0), new Vec3D(1,1,0), new Vec3D(1,0,0)),
                 // East
                 new Quadrilateral(new Vec3D(1,0,0), new Vec3D(1,1,0), new Vec3D(1,1,1), new Vec3D(1,0,1)),
                 // West
                 new Quadrilateral(new Vec3D(0,0,1), new Vec3D(0,1,1), new Vec3D(0,1,0), new Vec3D(0,0,0)),
-                // Bottom
-                new Quadrilateral(new Vec3D(0,0,1), new Vec3D(0,0,0), new Vec3D(1,0,0), new Vec3D(1,0,1)),
                 // Top
                 new Quadrilateral(new Vec3D(0,1,0), new Vec3D(0,1,1), new Vec3D(1,1,1), new Vec3D(1,1,0)),
-                // North
-                new Quadrilateral(new Vec3D(1,0,1), new Vec3D(1,1,1), new Vec3D(0,1,1), new Vec3D(0,0,1)),
+                // Bottom
+                new Quadrilateral(new Vec3D(0,0,1), new Vec3D(0,0,0), new Vec3D(1,0,0), new Vec3D(1,0,1)),
             };
             cube.quads = quads;
+            cube.name = "Cube" + meshes.Count;
             meshes.Add(cube);
         }
 
