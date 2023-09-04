@@ -29,124 +29,93 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            Viewer = new PictureBox();
+            ViewWindow = new PictureBox();
             Clock = new System.Windows.Forms.Timer(components);
-            FPS = new Label();
-            label1 = new Label();
-            label2 = new Label();
             MenuStrip = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
-            saveToolStripMenuItem = new ToolStripMenuItem();
             saveASToolStripMenuItem = new ToolStripMenuItem();
             displayToolStripMenuItem = new ToolStripMenuItem();
             WireframeToolStripMenuItem = new ToolStripMenuItem();
             CullingToolStripMenuItem = new ToolStripMenuItem();
             ShadingToolStripMenuItem = new ToolStripMenuItem();
-            solidToolStripMenuItem = new ToolStripMenuItem();
+            SolidToolStripMenuItem = new ToolStripMenuItem();
+            TextureToolStripMenuItem = new ToolStripMenuItem();
             addToolStripMenuItem = new ToolStripMenuItem();
             cubeToolStripMenuItem = new ToolStripMenuItem();
             resetToolStripMenuItem = new ToolStripMenuItem();
             CameraToolStripMenuItem = new ToolStripMenuItem();
             WorldToolStripMenuItem = new ToolStripMenuItem();
-            TextureToolStripMenuItem = new ToolStripMenuItem();
-            ((System.ComponentModel.ISupportInitialize)Viewer).BeginInit();
+            CameraSpeedSlider = new TrackBar();
+            CamSpeedLabel = new Label();
+            CamSpeedUpDown = new NumericUpDown();
+            ((System.ComponentModel.ISupportInitialize)ViewWindow).BeginInit();
             MenuStrip.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)CamSpeedUpDown).BeginInit();
             SuspendLayout();
             // 
-            // Viewer
+            // ViewWindow
             // 
-            Viewer.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            Viewer.Location = new Point(362, 68);
-            Viewer.Name = "Viewer";
-            Viewer.Size = new Size(1000, 850);
-            Viewer.TabIndex = 0;
-            Viewer.TabStop = false;
-            Viewer.Paint += Viewer_Paint;
-            Viewer.MouseDown += Viewer_MouseDown;
-            Viewer.MouseMove += Viewer_MouseMove;
-            Viewer.MouseUp += Viewer_MouseUp;
+            ViewWindow.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            ViewWindow.Location = new Point(374, 43);
+            ViewWindow.Name = "ViewWindow";
+            ViewWindow.Size = new Size(1000, 800);
+            ViewWindow.TabIndex = 0;
+            ViewWindow.TabStop = false;
+            ViewWindow.Paint += Viewer_Paint;
+            ViewWindow.MouseDown += Viewer_MouseDown;
+            ViewWindow.MouseMove += Viewer_MouseMove;
+            ViewWindow.MouseUp += Viewer_MouseUp;
             // 
             // Clock
             // 
             Clock.Tick += Clock_Tick;
             // 
-            // FPS
-            // 
-            FPS.AutoSize = true;
-            FPS.Location = new Point(12, 68);
-            FPS.Name = "FPS";
-            FPS.Size = new Size(57, 32);
-            FPS.TabIndex = 1;
-            FPS.Text = "FPS:";
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new Point(12, 100);
-            label1.Name = "label1";
-            label1.Size = new Size(78, 32);
-            label1.TabIndex = 2;
-            label1.Text = "label1";
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Location = new Point(12, 132);
-            label2.Name = "label2";
-            label2.Size = new Size(78, 32);
-            label2.TabIndex = 3;
-            label2.Text = "label2";
-            // 
             // MenuStrip
             // 
+            MenuStrip.BackColor = Color.FromArgb(255, 245, 245);
             MenuStrip.ImageScalingSize = new Size(32, 32);
             MenuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, displayToolStripMenuItem, addToolStripMenuItem, resetToolStripMenuItem });
             MenuStrip.Location = new Point(0, 0);
             MenuStrip.Name = "MenuStrip";
-            MenuStrip.Size = new Size(1374, 42);
+            MenuStrip.Size = new Size(1374, 40);
             MenuStrip.TabIndex = 4;
             MenuStrip.Text = "menuStrip1";
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openToolStripMenuItem, saveToolStripMenuItem, saveASToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openToolStripMenuItem, saveASToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            fileToolStripMenuItem.Size = new Size(71, 38);
+            fileToolStripMenuItem.Size = new Size(71, 36);
             fileToolStripMenuItem.Text = "File";
             // 
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new Size(229, 44);
+            openToolStripMenuItem.Size = new Size(359, 44);
             openToolStripMenuItem.Text = "Open";
-            openToolStripMenuItem.Click += openToolStripMenuItem_Click;
-            // 
-            // saveToolStripMenuItem
-            // 
-            saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            saveToolStripMenuItem.Size = new Size(229, 44);
-            saveToolStripMenuItem.Text = "Save";
+            openToolStripMenuItem.Click += OpenToolStripMenuItem_Click;
             // 
             // saveASToolStripMenuItem
             // 
             saveASToolStripMenuItem.Name = "saveASToolStripMenuItem";
-            saveASToolStripMenuItem.Size = new Size(229, 44);
-            saveASToolStripMenuItem.Text = "Save As";
-            saveASToolStripMenuItem.Click += saveASToolStripMenuItem_Click;
+            saveASToolStripMenuItem.Size = new Size(359, 44);
+            saveASToolStripMenuItem.Text = "Save As...";
+            saveASToolStripMenuItem.Click += SaveAsToolStripMenuItem_Click;
             // 
             // displayToolStripMenuItem
             // 
-            displayToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { WireframeToolStripMenuItem, CullingToolStripMenuItem, ShadingToolStripMenuItem, solidToolStripMenuItem, TextureToolStripMenuItem });
+            displayToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { WireframeToolStripMenuItem, CullingToolStripMenuItem, ShadingToolStripMenuItem, SolidToolStripMenuItem, TextureToolStripMenuItem });
             displayToolStripMenuItem.Name = "displayToolStripMenuItem";
-            displayToolStripMenuItem.Size = new Size(111, 38);
+            displayToolStripMenuItem.Size = new Size(111, 36);
             displayToolStripMenuItem.Text = "Display";
             // 
             // WireframeToolStripMenuItem
             // 
             WireframeToolStripMenuItem.CheckOnClick = true;
             WireframeToolStripMenuItem.Name = "WireframeToolStripMenuItem";
-            WireframeToolStripMenuItem.Size = new Size(359, 44);
+            WireframeToolStripMenuItem.Size = new Size(258, 44);
             WireframeToolStripMenuItem.Text = "Wireframe";
             // 
             // CullingToolStripMenuItem
@@ -155,7 +124,7 @@
             CullingToolStripMenuItem.CheckOnClick = true;
             CullingToolStripMenuItem.CheckState = CheckState.Checked;
             CullingToolStripMenuItem.Name = "CullingToolStripMenuItem";
-            CullingToolStripMenuItem.Size = new Size(359, 44);
+            CullingToolStripMenuItem.Size = new Size(258, 44);
             CullingToolStripMenuItem.Text = "Culling";
             // 
             // ShadingToolStripMenuItem
@@ -164,45 +133,54 @@
             ShadingToolStripMenuItem.CheckOnClick = true;
             ShadingToolStripMenuItem.CheckState = CheckState.Checked;
             ShadingToolStripMenuItem.Name = "ShadingToolStripMenuItem";
-            ShadingToolStripMenuItem.Size = new Size(359, 44);
+            ShadingToolStripMenuItem.Size = new Size(258, 44);
             ShadingToolStripMenuItem.Text = "Shading";
             // 
-            // solidToolStripMenuItem
+            // SolidToolStripMenuItem
             // 
-            solidToolStripMenuItem.Checked = true;
-            solidToolStripMenuItem.CheckOnClick = true;
-            solidToolStripMenuItem.CheckState = CheckState.Checked;
-            solidToolStripMenuItem.Name = "solidToolStripMenuItem";
-            solidToolStripMenuItem.Size = new Size(359, 44);
-            solidToolStripMenuItem.Text = "Solid";
+            SolidToolStripMenuItem.Checked = true;
+            SolidToolStripMenuItem.CheckOnClick = true;
+            SolidToolStripMenuItem.CheckState = CheckState.Checked;
+            SolidToolStripMenuItem.Name = "SolidToolStripMenuItem";
+            SolidToolStripMenuItem.Size = new Size(258, 44);
+            SolidToolStripMenuItem.Text = "Solid";
+            // 
+            // TextureToolStripMenuItem
+            // 
+            TextureToolStripMenuItem.Checked = true;
+            TextureToolStripMenuItem.CheckOnClick = true;
+            TextureToolStripMenuItem.CheckState = CheckState.Checked;
+            TextureToolStripMenuItem.Name = "TextureToolStripMenuItem";
+            TextureToolStripMenuItem.Size = new Size(258, 44);
+            TextureToolStripMenuItem.Text = "Texture";
             // 
             // addToolStripMenuItem
             // 
             addToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { cubeToolStripMenuItem });
             addToolStripMenuItem.Name = "addToolStripMenuItem";
-            addToolStripMenuItem.Size = new Size(92, 38);
-            addToolStripMenuItem.Text = "Add...";
+            addToolStripMenuItem.Size = new Size(77, 36);
+            addToolStripMenuItem.Text = "Add";
             // 
             // cubeToolStripMenuItem
             // 
             cubeToolStripMenuItem.Name = "cubeToolStripMenuItem";
             cubeToolStripMenuItem.Size = new Size(203, 44);
             cubeToolStripMenuItem.Text = "Cube";
-            cubeToolStripMenuItem.Click += cubeToolStripMenuItem_Click;
+            cubeToolStripMenuItem.Click += CubeToolStripMenuItem_Click;
             // 
             // resetToolStripMenuItem
             // 
             resetToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { CameraToolStripMenuItem, WorldToolStripMenuItem });
             resetToolStripMenuItem.Name = "resetToolStripMenuItem";
-            resetToolStripMenuItem.Size = new Size(106, 38);
-            resetToolStripMenuItem.Text = "Reset...";
+            resetToolStripMenuItem.Size = new Size(91, 36);
+            resetToolStripMenuItem.Text = "Reset";
             // 
             // CameraToolStripMenuItem
             // 
             CameraToolStripMenuItem.Name = "CameraToolStripMenuItem";
             CameraToolStripMenuItem.Size = new Size(228, 44);
             CameraToolStripMenuItem.Text = "Camera";
-            CameraToolStripMenuItem.Click += cameraToolStripMenuItem_Click;
+            CameraToolStripMenuItem.Click += CameraToolStripMenuItem_Click;
             // 
             // WorldToolStripMenuItem
             // 
@@ -211,62 +189,89 @@
             WorldToolStripMenuItem.Text = "World";
             WorldToolStripMenuItem.Click += WorldToolStripMenuItem_Click;
             // 
-            // TextureToolStripMenuItem
+            // CameraSpeedSlider
             // 
-            TextureToolStripMenuItem.Checked = true;
-            TextureToolStripMenuItem.CheckOnClick = true;
-            TextureToolStripMenuItem.CheckState = CheckState.Checked;
-            TextureToolStripMenuItem.Name = "TextureToolStripMenuItem";
-            TextureToolStripMenuItem.Size = new Size(359, 44);
-            TextureToolStripMenuItem.Text = "Texture";
+            CameraSpeedSlider.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            CameraSpeedSlider.Location = new Point(0, 753);
+            CameraSpeedSlider.Maximum = 100;
+            CameraSpeedSlider.Name = "CameraSpeedSlider";
+            CameraSpeedSlider.Size = new Size(260, 90);
+            CameraSpeedSlider.TabIndex = 5;
+            CameraSpeedSlider.TickFrequency = 10;
+            CameraSpeedSlider.Value = 8;
+            CameraSpeedSlider.ValueChanged += CameraSpeedSlider_ValueChanged;
+            // 
+            // CamSpeedLabel
+            // 
+            CamSpeedLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            CamSpeedLabel.AutoSize = true;
+            CamSpeedLabel.Location = new Point(10, 718);
+            CamSpeedLabel.Name = "CamSpeedLabel";
+            CamSpeedLabel.Size = new Size(174, 32);
+            CamSpeedLabel.TabIndex = 6;
+            CamSpeedLabel.Text = "Camera Speed:";
+            // 
+            // CamSpeedUpDown
+            // 
+            CamSpeedUpDown.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            CamSpeedUpDown.Location = new Point(266, 753);
+            CamSpeedUpDown.Name = "CamSpeedUpDown";
+            CamSpeedUpDown.Size = new Size(78, 39);
+            CamSpeedUpDown.TabIndex = 7;
+            CamSpeedUpDown.Value = new decimal(new int[] { 8, 0, 0, 0 });
+            CamSpeedUpDown.ValueChanged += CamSpeedUpDown_ValueChanged;
+            CamSpeedUpDown.KeyDown += CamSpeedUpDown_KeyDown;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1374, 929);
-            Controls.Add(label2);
-            Controls.Add(label1);
-            Controls.Add(FPS);
-            Controls.Add(Viewer);
+            BackColor = Color.FromArgb(255, 245, 245);
+            ClientSize = new Size(1374, 846);
+            Controls.Add(CamSpeedUpDown);
+            Controls.Add(CamSpeedLabel);
+            Controls.Add(CameraSpeedSlider);
+            Controls.Add(ViewWindow);
             Controls.Add(MenuStrip);
             KeyPreview = true;
             MainMenuStrip = MenuStrip;
+            MinimumSize = new Size(600, 250);
             Name = "Form1";
             Text = "3DModeler";
             Load += Form1_Load;
             SizeChanged += Form1_SizeChanged;
             KeyDown += Form1_KeyDown;
             KeyUp += Form1_KeyUp;
-            ((System.ComponentModel.ISupportInitialize)Viewer).EndInit();
+            ((System.ComponentModel.ISupportInitialize)ViewWindow).EndInit();
             MenuStrip.ResumeLayout(false);
             MenuStrip.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).EndInit();
+            ((System.ComponentModel.ISupportInitialize)CamSpeedUpDown).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
 
-        private PictureBox Viewer;
+        private PictureBox ViewWindow;
         private System.Windows.Forms.Timer Clock;
-        private Label FPS;
-        private Label label1;
-        private Label label2;
         private MenuStrip MenuStrip;
         private ToolStripMenuItem fileToolStripMenuItem;
         private ToolStripMenuItem openToolStripMenuItem;
-        private ToolStripMenuItem saveToolStripMenuItem;
         private ToolStripMenuItem saveASToolStripMenuItem;
         private ToolStripMenuItem displayToolStripMenuItem;
         private ToolStripMenuItem WireframeToolStripMenuItem;
         private ToolStripMenuItem CullingToolStripMenuItem;
         private ToolStripMenuItem ShadingToolStripMenuItem;
-        private ToolStripMenuItem solidToolStripMenuItem;
+        private ToolStripMenuItem SolidToolStripMenuItem;
         private ToolStripMenuItem addToolStripMenuItem;
         private ToolStripMenuItem cubeToolStripMenuItem;
         private ToolStripMenuItem resetToolStripMenuItem;
         private ToolStripMenuItem CameraToolStripMenuItem;
         private ToolStripMenuItem WorldToolStripMenuItem;
         private ToolStripMenuItem TextureToolStripMenuItem;
+        private TrackBar CameraSpeedSlider;
+        private Label CamSpeedLabel;
+        private NumericUpDown CamSpeedUpDown;
     }
 }

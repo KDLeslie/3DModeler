@@ -4,7 +4,6 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using static _3DModeler.Operations;
 
 
 namespace _3DModeler
@@ -40,7 +39,6 @@ namespace _3DModeler
         }
 
         // A 3D structure to hold vertex coordinates
-        // Perhaps replace with struct from System.Numerics
         public struct Vec3D
         {
             public Vec3D() { }
@@ -140,7 +138,7 @@ namespace _3DModeler
             }
         }
 
-        // Perhaps replace with struct from System.Numerics
+        // A matrix structure used for many vector transformations
         public struct Mat4x4
         {
             public Mat4x4() { }
@@ -177,7 +175,7 @@ namespace _3DModeler
             return matrix;
         }
 
-        // Rotates clockwise when looking along the positive axis
+        // A rotation clockwise when looking along the positive axis
         public static Mat4x4 Matrix_MakeRotationX(float fAngleRad)
         {
             Mat4x4 matrix = new Mat4x4();
@@ -246,17 +244,17 @@ namespace _3DModeler
         }
 
 
-        public static Mat4x4 Matrix_MakeProjection(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
+        public static Mat4x4 Matrix_MakeProjection(float fovDegrees, float aspectRatio, float zNear, float zFar)
         {
             // Aspect ratio prevents stretching when screen height and width vary
             // Field of view effectively zooms in or out when decreased or increased respectively
             // Near and Far planes represent the top and bottom of the viewing frustrum in positive z direction
-            float fFovRad = 1.0f / MathF.Tan(fFovDegrees * 0.5f / 180.0f * MathF.PI);
+            float fFovRad = 1.0f / MathF.Tan(fovDegrees * 0.5f / 180.0f * MathF.PI);
             Mat4x4 matrix = new Mat4x4();
-            matrix.m[0,0] = fAspectRatio * fFovRad;
+            matrix.m[0,0] = aspectRatio * fFovRad;
             matrix.m[1,1] = fFovRad;
-            matrix.m[2,2] = fFar / (fFar - fNear);
-            matrix.m[3,2] = (-fFar * fNear) / (fFar - fNear);
+            matrix.m[2,2] = zFar / (zFar - zNear);
+            matrix.m[3,2] = (-zFar * zNear) / (zFar - zNear);
             matrix.m[2,3] = 1.0f;
             matrix.m[3,3] = 0.0f;
             return matrix;
@@ -264,7 +262,7 @@ namespace _3DModeler
 
         public static Mat4x4 Matrix_PointAt(ref Vec3D pos, ref Vec3D target, ref Vec3D up)
         {
-            // calculate new Forward direction
+            // Calculate new Forward direction
             Vec3D newForward = target - pos;
             newForward = Vector_Normalize(ref newForward);
 
