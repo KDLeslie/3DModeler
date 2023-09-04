@@ -1,6 +1,6 @@
 # 3DModeler
 A primitive, Blender inspired, personal project that can view (and eventually edit) OBJ files.
-![image](https://github.com/KDLeslie/3DModeler/assets/139406690/8e9a5164-e326-4cda-8cb8-2d713fb0a3da)
+![image](https://github.com/KDLeslie/3DModeler/assets/139406690/9dd03c94-b9ec-407d-abaa-4f71124c473d)
 
 ## Features
 - Can load OBJ files and their corresponding MTL files and view objects using a first-person shooter style control scheme
