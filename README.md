@@ -14,7 +14,7 @@ A primitive, Blender inspired, personal project that can view (and eventually ed
 - Selectable objects
 - Transformations (scaling, translating, rotating) of objects
 - Deletion of objects
-- Addition of shapes such as cones, cylinders and spheres
+- Addition of shapes such as cones, cylinders, and spheres
 - Processing material template library data (other than just the texture file)
 
 ## Camera Controls
