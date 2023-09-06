@@ -130,6 +130,7 @@ namespace _3DModeler
             public List<Triangle> tris = new List<Triangle>();
             public List<Quadrilateral> quads = new List<Quadrilateral>();
             public Material material = new Material(); // Stores the mesh's material data
+
         }
         // Currently only used for texture information
         struct Material
@@ -456,7 +457,11 @@ namespace _3DModeler
                 }
             }
             // Converts a triangle's luminance to an argb color value
-            public Color GetColor(float lum)
+            public Color GetYellowShade(float lum)
+            {
+                return Color.FromArgb(255, (int)(lum * 255), (int)(lum * 255), 0);
+            }
+            public Color GetShade(float lum)
             {
                 return Color.FromArgb(255, (int)(lum * 255), (int)(lum * 255), (int)(lum * 255));
             }
@@ -464,7 +469,7 @@ namespace _3DModeler
             // Draws a triangle to a bitmap. Depending on whether the user
             // has toggled shading or texturing, the color information of
             // each triangle will be used accordingly.
-            public void DrawTriangle(Triangle tri, DirectBitmap texture, bool texturing = false, bool shading = true)
+            public void DrawTriangle(Triangle tri, DirectBitmap texture, bool texturing = false, bool shading = true, bool isSelected = false)
             {
                 // The pixel domain is integers. Can't move half a pixel
                 int x1 = (int)tri.p[0].x;
@@ -620,8 +625,21 @@ namespace _3DModeler
                                 // Scale up texel coordinates to the height and width of the textures
                                 int w = (int)(u * texture.Width);
                                 int h = (int)(v * texture.Height);
-                                if (texturing)
+                                if (isSelected)
                                 {
+                                    if(shading)
+                                    {
+                                        Color col = GetYellowShade(lum);
+                                        Frame.SetPixel(j, i, col);
+                                    }
+                                    else
+                                    {
+                                        Frame.SetPixel(j, i, Color.Yellow);
+                                    }
+                                }
+                                else if (texturing)
+                                {
+
                                     if (shading)
                                     {
                                         Color color = texture.GetPixel(w, h);
@@ -640,13 +658,14 @@ namespace _3DModeler
                                 {
                                     if (shading)
                                     {
-                                        Color color = GetColor(lum);
+                                        Color color = GetShade(lum);
                                         Frame.SetPixel(j, i, color);
                                     }
                                     else
                                     {
                                         Frame.SetPixel(j, i, Color.White);
                                     }
+
                                 }
                                 // Update depth buffer
                                 DepthBuffer[i * ScreenWidth + j] = tex_w;
@@ -721,11 +740,26 @@ namespace _3DModeler
                                 v = v >= 0 ? v % 1 : (v % 1 + 1.0f) % 1;
                                 int w = (int)(u * texture.Width);
                                 int h = (int)(v * texture.Height);
-                                if (texturing)
+                                if (isSelected)
                                 {
                                     if (shading)
                                     {
+                                        Color col = GetYellowShade(lum);
+                                        Frame.SetPixel(j, i, col);
+                                    }
+                                    else
+                                    {
+                                        Frame.SetPixel(j, i, Color.Yellow);
+                                    }
+                                }
+                                else if (texturing)
+                                {
+
+                                    if (shading)
+                                    {
                                         Color color = texture.GetPixel(w, h);
+                                        // Naïve implementation of shading until mtl
+                                        // processing is added
                                         color = Color.FromArgb(255, (int)(color.R * lum), (int)(color.G * lum), (int)(color.B * lum));
                                         Frame.SetPixel(j, i, color);
                                     }
@@ -739,13 +773,14 @@ namespace _3DModeler
                                 {
                                     if (shading)
                                     {
-                                        Color color = GetColor(lum);
+                                        Color color = GetShade(lum);
                                         Frame.SetPixel(j, i, color);
                                     }
                                     else
                                     {
                                         Frame.SetPixel(j, i, Color.White);
                                     }
+
                                 }
                                 DepthBuffer[i * ScreenWidth + j] = tex_w;
                             }
@@ -1032,13 +1067,18 @@ namespace _3DModeler
                 {
                     Meshes.RemoveAt(0);
                 }
+                foreach (Mesh m in Meshes)
+                {
+                    ObjectList.Items.Add(m.name);
+                }
+
                 return true;
             }
             // TODO: have several different catches based on the error
             // encountered
             catch
             {
-                Meshes.Clear();
+                ResetWorld();
                 return false;
             }
         }
@@ -1183,6 +1223,12 @@ namespace _3DModeler
             // CameraSpeedSlider.Value = 8;
         }
 
+        private void ResetWorld()
+        {
+            Meshes.Clear();
+            ObjectList.Items.Clear();
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             // this.DoubleBuffered = true; // May not be needed since picturebox is already double buffered
@@ -1315,8 +1361,14 @@ namespace _3DModeler
             }
 
             // Draw each mesh
-            foreach (Mesh mesh in Meshes)
+            for (int i = 0; i < Meshes.Count; i++)
             {
+                Mesh mesh = Meshes[i];
+                bool isSelected = false;
+                if(ObjectList.SelectedIndex == i) 
+                { 
+                    isSelected = true;
+                }
                 // Store triangles for rasterization later
                 List<Triangle> vecTrianglesToRaster = new List<Triangle>();
 
@@ -1423,7 +1475,7 @@ namespace _3DModeler
                     {
                         if (SolidToolStripMenuItem.Checked)
                             MainView.DrawTriangle(t, mesh.material.texture, mesh.material.hasTexture & TextureToolStripMenuItem.Checked,
-                                ShadingToolStripMenuItem.Checked);
+                                ShadingToolStripMenuItem.Checked, isSelected);
 
                         if (WireframeToolStripMenuItem.Checked)
                         {
@@ -1509,7 +1561,7 @@ namespace _3DModeler
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     // Delete meshed already in the world            
-                    Meshes.Clear();
+                    ResetWorld();
 
                     string filePath = openFileDialog.FileName;
                     string folderPath = Path.GetDirectoryName(filePath);
@@ -1786,6 +1838,7 @@ namespace _3DModeler
             cube.name = "Cube" + Meshes.Count;
             cube.materialName = "Cube" + Meshes.Count;
             Meshes.Add(cube);
+            ObjectList.Items.Add(cube.name);
         }
 
         private void CameraToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1795,7 +1848,7 @@ namespace _3DModeler
 
         private void WorldToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Meshes.Clear();
+            ResetWorld();
         }
 
         private void CameraSpeedSlider_ValueChanged(object sender, EventArgs e)
@@ -1818,6 +1871,16 @@ namespace _3DModeler
             {
                 e.SuppressKeyPress = true;
             }
+        }
+
+        private void Form1_Click(object sender, EventArgs e)
+        {
+            ObjectList.ClearSelected();
+        }
+
+        private void ViewWindow_Click(object sender, EventArgs e)
+        {
+            ObjectList.ClearSelected();
         }
     }
 }

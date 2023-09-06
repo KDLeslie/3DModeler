@@ -49,6 +49,7 @@
             CameraSpeedSlider = new TrackBar();
             CamSpeedLabel = new Label();
             CamSpeedUpDown = new NumericUpDown();
+            ObjectList = new ListBox();
             ((System.ComponentModel.ISupportInitialize)ViewWindow).BeginInit();
             MenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).BeginInit();
@@ -63,6 +64,7 @@
             ViewWindow.Size = new Size(1000, 800);
             ViewWindow.TabIndex = 0;
             ViewWindow.TabStop = false;
+            ViewWindow.Click += ViewWindow_Click;
             ViewWindow.Paint += Viewer_Paint;
             ViewWindow.MouseDown += Viewer_MouseDown;
             ViewWindow.MouseMove += Viewer_MouseMove;
@@ -93,14 +95,14 @@
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new Size(359, 44);
+            openToolStripMenuItem.Size = new Size(244, 44);
             openToolStripMenuItem.Text = "Open";
             openToolStripMenuItem.Click += OpenToolStripMenuItem_Click;
             // 
             // saveASToolStripMenuItem
             // 
             saveASToolStripMenuItem.Name = "saveASToolStripMenuItem";
-            saveASToolStripMenuItem.Size = new Size(359, 44);
+            saveASToolStripMenuItem.Size = new Size(244, 44);
             saveASToolStripMenuItem.Text = "Save As...";
             saveASToolStripMenuItem.Click += SaveAsToolStripMenuItem_Click;
             // 
@@ -222,12 +224,22 @@
             CamSpeedUpDown.ValueChanged += CamSpeedUpDown_ValueChanged;
             CamSpeedUpDown.KeyDown += CamSpeedUpDown_KeyDown;
             // 
+            // ObjectList
+            // 
+            ObjectList.FormattingEnabled = true;
+            ObjectList.ItemHeight = 32;
+            ObjectList.Location = new Point(20, 119);
+            ObjectList.Name = "ObjectList";
+            ObjectList.Size = new Size(324, 516);
+            ObjectList.TabIndex = 8;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(255, 245, 245);
             ClientSize = new Size(1374, 846);
+            Controls.Add(ObjectList);
             Controls.Add(CamSpeedUpDown);
             Controls.Add(CamSpeedLabel);
             Controls.Add(CameraSpeedSlider);
@@ -240,6 +252,7 @@
             Text = "3DModeler";
             Load += Form1_Load;
             SizeChanged += Form1_SizeChanged;
+            Click += Form1_Click;
             KeyDown += Form1_KeyDown;
             KeyUp += Form1_KeyUp;
             ((System.ComponentModel.ISupportInitialize)ViewWindow).EndInit();
@@ -273,5 +286,6 @@
         private TrackBar CameraSpeedSlider;
         private Label CamSpeedLabel;
         private NumericUpDown CamSpeedUpDown;
+        private ListBox ObjectList;
     }
 }
