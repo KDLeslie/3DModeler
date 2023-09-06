@@ -50,10 +50,13 @@
             CamSpeedLabel = new Label();
             CamSpeedUpDown = new NumericUpDown();
             ObjectList = new ListBox();
+            ContextMenuStrip = new ContextMenuStrip(components);
+            deleteToolStripMenuItem = new ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)ViewWindow).BeginInit();
             MenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)CamSpeedUpDown).BeginInit();
+            ContextMenuStrip.SuspendLayout();
             SuspendLayout();
             // 
             // ViewWindow
@@ -230,8 +233,23 @@
             ObjectList.ItemHeight = 32;
             ObjectList.Location = new Point(20, 119);
             ObjectList.Name = "ObjectList";
-            ObjectList.Size = new Size(324, 516);
+            ObjectList.Size = new Size(324, 548);
             ObjectList.TabIndex = 8;
+            ObjectList.MouseUp += ObjectList_MouseUp;
+            // 
+            // ContextMenuStrip
+            // 
+            ContextMenuStrip.ImageScalingSize = new Size(32, 32);
+            ContextMenuStrip.Items.AddRange(new ToolStripItem[] { deleteToolStripMenuItem });
+            ContextMenuStrip.Name = "contextMenuStrip1";
+            ContextMenuStrip.Size = new Size(159, 42);
+            // 
+            // deleteToolStripMenuItem
+            // 
+            deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
+            deleteToolStripMenuItem.Size = new Size(158, 38);
+            deleteToolStripMenuItem.Text = "Delete";
+            deleteToolStripMenuItem.Click += deleteToolStripMenuItem_Click;
             // 
             // Form1
             // 
@@ -260,6 +278,7 @@
             MenuStrip.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).EndInit();
             ((System.ComponentModel.ISupportInitialize)CamSpeedUpDown).EndInit();
+            ContextMenuStrip.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -287,5 +306,7 @@
         private Label CamSpeedLabel;
         private NumericUpDown CamSpeedUpDown;
         private ListBox ObjectList;
+        private ContextMenuStrip ContextMenuStrip;
+        private ToolStripMenuItem deleteToolStripMenuItem;
     }
 }

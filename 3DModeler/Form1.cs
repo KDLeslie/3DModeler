@@ -627,7 +627,7 @@ namespace _3DModeler
                                 int h = (int)(v * texture.Height);
                                 if (isSelected)
                                 {
-                                    if(shading)
+                                    if (shading)
                                     {
                                         Color col = GetYellowShade(lum);
                                         Frame.SetPixel(j, i, col);
@@ -1365,8 +1365,8 @@ namespace _3DModeler
             {
                 Mesh mesh = Meshes[i];
                 bool isSelected = false;
-                if(ObjectList.SelectedIndex == i) 
-                { 
+                if (ObjectList.SelectedIndex == i)
+                {
                     isSelected = true;
                 }
                 // Store triangles for rasterization later
@@ -1881,6 +1881,22 @@ namespace _3DModeler
         private void ViewWindow_Click(object sender, EventArgs e)
         {
             ObjectList.ClearSelected();
+        }
+
+        private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            int index = ObjectList.SelectedIndex;
+            Meshes.RemoveAt(index);
+            ObjectList.Items.RemoveAt(index);
+        }
+
+
+        private void ObjectList_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right & ObjectList.SelectedIndex != -1)
+            {
+                ContextMenuStrip.Show(Cursor.Position);
+            }
         }
     }
 }
