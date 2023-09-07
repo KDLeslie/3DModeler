@@ -240,11 +240,12 @@
             // 
             // ObjectList
             // 
+            ObjectList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             ObjectList.FormattingEnabled = true;
             ObjectList.ItemHeight = 32;
             ObjectList.Location = new Point(12, 43);
             ObjectList.Name = "ObjectList";
-            ObjectList.Size = new Size(324, 260);
+            ObjectList.Size = new Size(332, 452);
             ObjectList.TabIndex = 8;
             ObjectList.SelectedIndexChanged += ObjectList_SelectedIndexChanged;
             ObjectList.MouseUp += ObjectList_MouseUp;
@@ -265,19 +266,21 @@
             // 
             // TransformationBox
             // 
+            TransformationBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             TransformationBox.FormattingEnabled = true;
             TransformationBox.Items.AddRange(new object[] { "Translation", "Rotation", "Scale" });
-            TransformationBox.Location = new Point(143, 517);
+            TransformationBox.Location = new Point(143, 523);
             TransformationBox.Name = "TransformationBox";
-            TransformationBox.Size = new Size(193, 40);
+            TransformationBox.Size = new Size(201, 40);
             TransformationBox.TabIndex = 9;
             TransformationBox.Text = "Translation";
             TransformationBox.SelectedIndexChanged += TransformationBox_SelectedIndexChanged;
             // 
             // LabelX
             // 
+            LabelX.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelX.AutoSize = true;
-            LabelX.Location = new Point(151, 576);
+            LabelX.Location = new Point(98, 576);
             LabelX.Name = "LabelX";
             LabelX.Size = new Size(33, 32);
             LabelX.TabIndex = 13;
@@ -285,8 +288,9 @@
             // 
             // LabelY
             // 
+            LabelY.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelY.AutoSize = true;
-            LabelY.Location = new Point(151, 621);
+            LabelY.Location = new Point(99, 621);
             LabelY.Name = "LabelY";
             LabelY.Size = new Size(32, 32);
             LabelY.TabIndex = 14;
@@ -294,8 +298,9 @@
             // 
             // LabelZ
             // 
+            LabelZ.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelZ.AutoSize = true;
-            LabelZ.Location = new Point(150, 666);
+            LabelZ.Location = new Point(98, 666);
             LabelZ.Name = "LabelZ";
             LabelZ.Size = new Size(33, 32);
             LabelZ.TabIndex = 15;
@@ -303,8 +308,9 @@
             // 
             // LabelTransform
             // 
+            LabelTransform.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelTransform.AutoSize = true;
-            LabelTransform.Location = new Point(12, 520);
+            LabelTransform.Location = new Point(6, 531);
             LabelTransform.Name = "LabelTransform";
             LabelTransform.Size = new Size(125, 32);
             LabelTransform.TabIndex = 16;
@@ -312,33 +318,39 @@
             // 
             // UpDownX
             // 
-            UpDownX.Location = new Point(200, 569);
-            UpDownX.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
-            UpDownX.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            UpDownX.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            UpDownX.Location = new Point(143, 569);
+            UpDownX.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
+            UpDownX.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
             UpDownX.Name = "UpDownX";
-            UpDownX.Size = new Size(136, 39);
+            UpDownX.Size = new Size(201, 39);
             UpDownX.TabIndex = 17;
             UpDownX.ValueChanged += UpDownX_ValueChanged;
+            UpDownX.KeyDown += UpDownX_KeyDown;
             // 
             // UpDownY
             // 
-            UpDownY.Location = new Point(200, 614);
-            UpDownY.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
-            UpDownY.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            UpDownY.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            UpDownY.Location = new Point(143, 614);
+            UpDownY.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
+            UpDownY.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
             UpDownY.Name = "UpDownY";
-            UpDownY.Size = new Size(136, 39);
+            UpDownY.Size = new Size(201, 39);
             UpDownY.TabIndex = 18;
             UpDownY.ValueChanged += UpDownY_ValueChanged;
+            UpDownY.KeyDown += UpDownY_KeyDown;
             // 
             // UpDownZ
             // 
-            UpDownZ.Location = new Point(200, 659);
-            UpDownZ.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
-            UpDownZ.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            UpDownZ.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            UpDownZ.Location = new Point(143, 659);
+            UpDownZ.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
+            UpDownZ.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
             UpDownZ.Name = "UpDownZ";
-            UpDownZ.Size = new Size(136, 39);
+            UpDownZ.Size = new Size(201, 39);
             UpDownZ.TabIndex = 19;
             UpDownZ.ValueChanged += UpDownZ_ValueChanged;
+            UpDownZ.KeyDown += UpDownZ_KeyDown;
             // 
             // Form1
             // 
@@ -362,7 +374,7 @@
             Controls.Add(MenuStrip);
             KeyPreview = true;
             MainMenuStrip = MenuStrip;
-            MinimumSize = new Size(600, 250);
+            MinimumSize = new Size(1000, 600);
             Name = "Form1";
             Text = "3DModeler";
             Load += Form1_Load;

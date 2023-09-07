@@ -1218,7 +1218,7 @@ namespace _3DModeler
         // Returns all camera related settings to default
         private void ResetCamera()
         {
-            MainView.CameraPosition = new Vec3D();
+            MainView.CameraPosition = new Vec3D(0, 0, -5);
             MainView.LookDirection = new Vec3D();
             MainView.Yaw = 0;
             MainView.Pitch = 0;
@@ -1941,6 +1941,7 @@ namespace _3DModeler
 
         private void UpDownX_ValueChanged(object sender, EventArgs e)
         {
+
             if (ObjectList.SelectedIndex != -1)
             {
                 int index = ObjectList.SelectedIndex;
@@ -2015,6 +2016,30 @@ namespace _3DModeler
                         UpDownZ.Value = Meshes[index].Scale[2];
                         break;
                 }
+            }
+        }
+
+        private void UpDownX_KeyDown(object sender, KeyEventArgs e)
+        {
+            if ((e.KeyCode > Keys.D9 | e.KeyCode < Keys.D0) & e.KeyCode != Keys.Back & e.KeyCode != Keys.Enter & e.KeyCode != Keys.Delete & e.KeyCode != Keys.OemMinus)
+            {
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void UpDownY_KeyDown(object sender, KeyEventArgs e)
+        {
+            if ((e.KeyCode > Keys.D9 | e.KeyCode < Keys.D0) & e.KeyCode != Keys.Back & e.KeyCode != Keys.Enter & e.KeyCode != Keys.Delete & e.KeyCode != Keys.OemMinus)
+            {
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void UpDownZ_KeyDown(object sender, KeyEventArgs e)
+        {
+            if ((e.KeyCode > Keys.D9 | e.KeyCode < Keys.D0) & e.KeyCode != Keys.Back & e.KeyCode != Keys.Enter & e.KeyCode != Keys.Delete & e.KeyCode != Keys.OemMinus)
+            {
+                e.SuppressKeyPress = true;
             }
         }
     }
