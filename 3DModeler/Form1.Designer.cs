@@ -60,6 +60,7 @@
             UpDownX = new NumericUpDown();
             UpDownY = new NumericUpDown();
             UpDownZ = new NumericUpDown();
+            LabelObjectList = new Label();
             ((System.ComponentModel.ISupportInitialize)ViewWindow).BeginInit();
             MenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).BeginInit();
@@ -243,9 +244,9 @@
             ObjectList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             ObjectList.FormattingEnabled = true;
             ObjectList.ItemHeight = 32;
-            ObjectList.Location = new Point(12, 43);
+            ObjectList.Location = new Point(12, 78);
             ObjectList.Name = "ObjectList";
-            ObjectList.Size = new Size(332, 452);
+            ObjectList.Size = new Size(332, 420);
             ObjectList.TabIndex = 8;
             ObjectList.SelectedIndexChanged += ObjectList_SelectedIndexChanged;
             ObjectList.MouseUp += ObjectList_MouseUp;
@@ -280,7 +281,7 @@
             // 
             LabelX.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelX.AutoSize = true;
-            LabelX.Location = new Point(98, 576);
+            LabelX.Location = new Point(98, 571);
             LabelX.Name = "LabelX";
             LabelX.Size = new Size(33, 32);
             LabelX.TabIndex = 13;
@@ -290,7 +291,7 @@
             // 
             LabelY.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelY.AutoSize = true;
-            LabelY.Location = new Point(99, 621);
+            LabelY.Location = new Point(99, 616);
             LabelY.Name = "LabelY";
             LabelY.Size = new Size(32, 32);
             LabelY.TabIndex = 14;
@@ -300,7 +301,7 @@
             // 
             LabelZ.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelZ.AutoSize = true;
-            LabelZ.Location = new Point(98, 666);
+            LabelZ.Location = new Point(98, 661);
             LabelZ.Name = "LabelZ";
             LabelZ.Size = new Size(33, 32);
             LabelZ.TabIndex = 15;
@@ -310,7 +311,7 @@
             // 
             LabelTransform.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelTransform.AutoSize = true;
-            LabelTransform.Location = new Point(6, 531);
+            LabelTransform.Location = new Point(6, 526);
             LabelTransform.Name = "LabelTransform";
             LabelTransform.Size = new Size(125, 32);
             LabelTransform.TabIndex = 16;
@@ -352,12 +353,22 @@
             UpDownZ.ValueChanged += UpDownZ_ValueChanged;
             UpDownZ.KeyDown += UpDownZ_KeyDown;
             // 
+            // LabelObjectList
+            // 
+            LabelObjectList.AutoSize = true;
+            LabelObjectList.Location = new Point(10, 43);
+            LabelObjectList.Name = "LabelObjectList";
+            LabelObjectList.Size = new Size(131, 32);
+            LabelObjectList.TabIndex = 20;
+            LabelObjectList.Text = "Object List:";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(255, 245, 245);
             ClientSize = new Size(1374, 846);
+            Controls.Add(LabelObjectList);
             Controls.Add(UpDownZ);
             Controls.Add(UpDownY);
             Controls.Add(UpDownX);
@@ -428,5 +439,6 @@
         private NumericUpDown UpDownX;
         private NumericUpDown UpDownY;
         private NumericUpDown UpDownZ;
+        private Label LabelObjectList;
     }
 }
