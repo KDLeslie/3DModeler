@@ -1,6 +1,8 @@
+using System;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using static _3DModeler.Operations;
 
@@ -130,6 +132,9 @@ namespace _3DModeler
             public List<Triangle> tris = new List<Triangle>();
             public List<Quadrilateral> quads = new List<Quadrilateral>();
             public Material material = new Material(); // Stores the mesh's material data
+            public int[] Translation = new int[3] { 0, 0, 0 };
+            public int[] Rotation = new int[3] { 0, 0, 0 };
+            public int[] Scale = new int[3] { 1, 1, 1 };
 
         }
         // Currently only used for texture information
@@ -161,7 +166,7 @@ namespace _3DModeler
                 this.DepthBuffer = new float[screenWidth * screenHeight];
             }
             public Mat4x4 ProjMat = new Mat4x4(); // Matrix that converts from view space to screen space
-            public Vec3D CameraPosition = new Vec3D(); // Location of camera in world space
+            public Vec3D CameraPosition = new Vec3D(0, 0, -5); // Location of camera in world space
             public Vec3D LookDirection = new Vec3D(); // Direction vector along the direction camera points
             public float Pitch { get; set; } // Camera rotation about the x-axis
             public float Yaw { get; set; } // Camera rotation about the y-axis
@@ -325,14 +330,14 @@ namespace _3DModeler
             }
             // Prepares each triangle to be drawn. Each triangle that is ready
             // to be drawn is stored in the list that's passed in as an parameter
-            public void PrepareForRasterization(Mat4x4 worldMat, Mat4x4 matView, Triangle tri, ref List<Triangle> vecTrianglesToRaster,
+            public void PrepareForRasterization(Mat4x4 worldMat, Mat4x4 matView, Mat4x4 matTransform, Triangle tri, ref List<Triangle> vecTrianglesToRaster,
                 bool culling)
             {
                 Triangle triTransformed = new Triangle();
                 // World Matrix Transform
-                triTransformed.p[0] = tri.p[0] * worldMat;
-                triTransformed.p[1] = tri.p[1] * worldMat;
-                triTransformed.p[2] = tri.p[2] * worldMat;
+                triTransformed.p[0] = tri.p[0] * worldMat * matTransform;
+                triTransformed.p[1] = tri.p[1] * worldMat * matTransform;
+                triTransformed.p[2] = tri.p[2] * worldMat * matTransform;
                 triTransformed.t[0] = tri.t[0];
                 triTransformed.t[1] = tri.t[1];
                 triTransformed.t[2] = tri.t[2];
@@ -1229,6 +1234,15 @@ namespace _3DModeler
             ObjectList.Items.Clear();
         }
 
+        private Mat4x4 GetTransformationMatrix(Mesh mesh)
+        {
+
+            Mat4x4 matTranslate = Matrix_MakeTranslation(mesh.Translation[0], mesh.Translation[1], mesh.Translation[2]);
+            Mat4x4 matScale = Matrix_MakeScale(mesh.Scale[0], mesh.Scale[1], mesh.Scale[2]);
+            Mat4x4 matRotate = Matrix_MakeRotationX(mesh.Rotation[0]) * Matrix_MakeRotationY(mesh.Rotation[1]) * Matrix_MakeRotationZ(mesh.Rotation[2]);
+            return matScale * matRotate * matTranslate;
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             // this.DoubleBuffered = true; // May not be needed since picturebox is already double buffered
@@ -1323,7 +1337,7 @@ namespace _3DModeler
             Mat4x4 worldMatScale = Matrix_MakeScale(1, 1, 1);
 
             // Offsets the world
-            Mat4x4 worldMatTrans = Matrix_MakeTranslation(0.0f, 0.0f, 5.0f);
+            Mat4x4 worldMatTrans = Matrix_MakeTranslation(0.0f, 0.0f, 0.0f);
 
             // Apply transformations in correct order
             worldMat *= worldMatScale; // Transform by scaling
@@ -1360,10 +1374,16 @@ namespace _3DModeler
                 MainView.DepthBuffer[i] = 0.0f;
             }
 
+
             // Draw each mesh
             for (int i = 0; i < Meshes.Count; i++)
             {
                 Mesh mesh = Meshes[i];
+
+                // Get Transformation Matrix
+                Mat4x4 matTransform = GetTransformationMatrix(mesh);
+
+
                 bool isSelected = false;
                 if (ObjectList.SelectedIndex == i)
                 {
@@ -1375,7 +1395,7 @@ namespace _3DModeler
                 // Prepare each triangle for drawing
                 foreach (Triangle tri in mesh.tris)
                 {
-                    MainView.PrepareForRasterization(worldMat, matView, tri, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
+                    MainView.PrepareForRasterization(worldMat, matView, matTransform, tri, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
                 }
                 // Split each quad into two tris and prepare both tris for drawing.
                 // To keep the quad from looking like two tris in wireframe mode, a
@@ -1384,10 +1404,10 @@ namespace _3DModeler
                 {
                     Triangle tri1 = new Triangle(quad.p[0], quad.p[1], quad.p[2], quad.t[0], quad.t[1], quad.t[2]);
                     tri1.drawSide2_0 = false;
-                    MainView.PrepareForRasterization(worldMat, matView, tri1, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
+                    MainView.PrepareForRasterization(worldMat, matView, matTransform, tri1, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
                     Triangle tri2 = new Triangle(quad.p[0], quad.p[2], quad.p[3], quad.t[0], quad.t[2], quad.t[3]);
                     tri2.drawSide0_1 = false;
-                    MainView.PrepareForRasterization(worldMat, matView, tri2, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
+                    MainView.PrepareForRasterization(worldMat, matView, matTransform, tri2, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
                 }
 
                 // Sort triangles from back to front through approximating
@@ -1632,6 +1652,9 @@ namespace _3DModeler
                         int texIndex = 1;
                         foreach (Mesh mesh in Meshes)
                         {
+                            // Apply transformations
+                            Mat4x4 transform = GetTransformationMatrix(mesh);
+
                             // As we loop through each polygon, we store each vertex and
                             // its index into the pool
                             Dictionary<Vec3D, int> indexOfVertex = new Dictionary<Vec3D, int>();
@@ -1653,17 +1676,17 @@ namespace _3DModeler
                                 {
                                     // Check whether that vertex is already in our pool of
                                     // vertices
-                                    if (indexOfVertex.ContainsKey(tri.p[i]))
+                                    if (indexOfVertex.ContainsKey(tri.p[i] * transform))
                                     {
                                         // If it already exits in the pool, we get the index
                                         // of that vertex and link it to the face
-                                        vertFace[i] = indexOfVertex[tri.p[i]];
+                                        vertFace[i] = indexOfVertex[tri.p[i] * transform];
                                     }
                                     else
                                     {
                                         // If we don't already have that vertex stored, then
                                         // we store it and its index
-                                        indexOfVertex[tri.p[i]] = vertIndex;
+                                        indexOfVertex[tri.p[i] * transform] = vertIndex;
                                         // We link that index to the face and we
                                         // increment the index for the next new vertex
                                         vertFace[i] = vertIndex++;
@@ -1691,13 +1714,13 @@ namespace _3DModeler
 
                                 for (int i = 0; i < 4; i++)
                                 {
-                                    if (indexOfVertex.ContainsKey(quad.p[i]))
+                                    if (indexOfVertex.ContainsKey(quad.p[i] * transform))
                                     {
-                                        vertFace[i] = indexOfVertex[quad.p[i]];
+                                        vertFace[i] = indexOfVertex[quad.p[i] * transform];
                                     }
                                     else
                                     {
-                                        indexOfVertex[quad.p[i]] = vertIndex;
+                                        indexOfVertex[quad.p[i] * transform] = vertIndex;
                                         vertFace[i] = vertIndex++;
                                     }
                                     if (indexOfTexel.ContainsKey(quad.t[i]))
@@ -1896,6 +1919,102 @@ namespace _3DModeler
             if (e.Button == MouseButtons.Right & ObjectList.SelectedIndex != -1)
             {
                 ContextMenuStrip.Show(Cursor.Position);
+            }
+        }
+
+        // Note change to enum maybe
+        private void Transform(int value, int index, string transformation, int coordinate)
+        {
+            switch (transformation)
+            {
+                case "Translation":
+                    Meshes[index].Translation[coordinate] = value;
+                    break;
+                case "Rotation":
+                    Meshes[index].Rotation[coordinate] = value;
+                    break;
+                case "Scale":
+                    Meshes[index].Scale[coordinate] = value;
+                    break;
+            }
+        }
+
+        private void UpDownX_ValueChanged(object sender, EventArgs e)
+        {
+            if (ObjectList.SelectedIndex != -1)
+            {
+                int index = ObjectList.SelectedIndex;
+                Transform((int)UpDownX.Value, ObjectList.SelectedIndex, TransformationBox.Text, 0);
+            }
+        }
+
+        private void UpDownY_ValueChanged(object sender, EventArgs e)
+        {
+            if (ObjectList.SelectedIndex != -1)
+            {
+                int index = ObjectList.SelectedIndex;
+                Transform((int)UpDownY.Value, ObjectList.SelectedIndex, TransformationBox.Text, 1);
+            }
+        }
+
+        private void UpDownZ_ValueChanged(object sender, EventArgs e)
+        {
+            if (ObjectList.SelectedIndex != -1)
+            {
+                int index = ObjectList.SelectedIndex;
+                Transform((int)UpDownZ.Value, ObjectList.SelectedIndex, TransformationBox.Text, 2);
+            }
+        }
+
+        private void ObjectList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (ObjectList.SelectedIndex != -1)
+            {
+                int index = ObjectList.SelectedIndex;
+                switch (TransformationBox.Text)
+                {
+                    case "Translation":
+                        UpDownX.Value = Meshes[index].Translation[0];
+                        UpDownY.Value = Meshes[index].Translation[1];
+                        UpDownZ.Value = Meshes[index].Translation[2];
+                        break;
+                    case "Rotation":
+                        UpDownX.Value = Meshes[index].Rotation[0];
+                        UpDownY.Value = Meshes[index].Rotation[1];
+                        UpDownZ.Value = Meshes[index].Rotation[2];
+                        break;
+                    case "Scale":
+                        UpDownX.Value = Meshes[index].Scale[0];
+                        UpDownY.Value = Meshes[index].Scale[1];
+                        UpDownZ.Value = Meshes[index].Scale[2];
+                        break;
+                }
+            }
+        }
+
+        private void TransformationBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (ObjectList.SelectedIndex != -1)
+            {
+                int index = ObjectList.SelectedIndex;
+                switch (TransformationBox.Text)
+                {
+                    case "Translation":
+                        UpDownX.Value = Meshes[index].Translation[0];
+                        UpDownY.Value = Meshes[index].Translation[1];
+                        UpDownZ.Value = Meshes[index].Translation[2];
+                        break;
+                    case "Rotation":
+                        UpDownX.Value = Meshes[index].Rotation[0];
+                        UpDownY.Value = Meshes[index].Rotation[1];
+                        UpDownZ.Value = Meshes[index].Rotation[2];
+                        break;
+                    case "Scale":
+                        UpDownX.Value = Meshes[index].Scale[0];
+                        UpDownY.Value = Meshes[index].Scale[1];
+                        UpDownZ.Value = Meshes[index].Scale[2];
+                        break;
+                }
             }
         }
     }

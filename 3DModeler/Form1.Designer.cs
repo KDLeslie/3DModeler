@@ -52,11 +52,22 @@
             ObjectList = new ListBox();
             ContextMenuStrip = new ContextMenuStrip(components);
             deleteToolStripMenuItem = new ToolStripMenuItem();
+            TransformationBox = new ComboBox();
+            LabelX = new Label();
+            LabelY = new Label();
+            LabelZ = new Label();
+            LabelTransform = new Label();
+            UpDownX = new NumericUpDown();
+            UpDownY = new NumericUpDown();
+            UpDownZ = new NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)ViewWindow).BeginInit();
             MenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)CamSpeedUpDown).BeginInit();
             ContextMenuStrip.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)UpDownX).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)UpDownY).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)UpDownZ).BeginInit();
             SuspendLayout();
             // 
             // ViewWindow
@@ -231,10 +242,11 @@
             // 
             ObjectList.FormattingEnabled = true;
             ObjectList.ItemHeight = 32;
-            ObjectList.Location = new Point(20, 119);
+            ObjectList.Location = new Point(12, 43);
             ObjectList.Name = "ObjectList";
-            ObjectList.Size = new Size(324, 548);
+            ObjectList.Size = new Size(324, 260);
             ObjectList.TabIndex = 8;
+            ObjectList.SelectedIndexChanged += ObjectList_SelectedIndexChanged;
             ObjectList.MouseUp += ObjectList_MouseUp;
             // 
             // ContextMenuStrip
@@ -251,12 +263,97 @@
             deleteToolStripMenuItem.Text = "Delete";
             deleteToolStripMenuItem.Click += deleteToolStripMenuItem_Click;
             // 
+            // TransformationBox
+            // 
+            TransformationBox.FormattingEnabled = true;
+            TransformationBox.Items.AddRange(new object[] { "Translation", "Rotation", "Scale" });
+            TransformationBox.Location = new Point(143, 517);
+            TransformationBox.Name = "TransformationBox";
+            TransformationBox.Size = new Size(193, 40);
+            TransformationBox.TabIndex = 9;
+            TransformationBox.Text = "Translation";
+            TransformationBox.SelectedIndexChanged += TransformationBox_SelectedIndexChanged;
+            // 
+            // LabelX
+            // 
+            LabelX.AutoSize = true;
+            LabelX.Location = new Point(151, 576);
+            LabelX.Name = "LabelX";
+            LabelX.Size = new Size(33, 32);
+            LabelX.TabIndex = 13;
+            LabelX.Text = "X:";
+            // 
+            // LabelY
+            // 
+            LabelY.AutoSize = true;
+            LabelY.Location = new Point(151, 621);
+            LabelY.Name = "LabelY";
+            LabelY.Size = new Size(32, 32);
+            LabelY.TabIndex = 14;
+            LabelY.Text = "Y:";
+            // 
+            // LabelZ
+            // 
+            LabelZ.AutoSize = true;
+            LabelZ.Location = new Point(150, 666);
+            LabelZ.Name = "LabelZ";
+            LabelZ.Size = new Size(33, 32);
+            LabelZ.TabIndex = 15;
+            LabelZ.Text = "Z:";
+            // 
+            // LabelTransform
+            // 
+            LabelTransform.AutoSize = true;
+            LabelTransform.Location = new Point(12, 520);
+            LabelTransform.Name = "LabelTransform";
+            LabelTransform.Size = new Size(125, 32);
+            LabelTransform.TabIndex = 16;
+            LabelTransform.Text = "Transform:";
+            // 
+            // UpDownX
+            // 
+            UpDownX.Location = new Point(200, 569);
+            UpDownX.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            UpDownX.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            UpDownX.Name = "UpDownX";
+            UpDownX.Size = new Size(136, 39);
+            UpDownX.TabIndex = 17;
+            UpDownX.ValueChanged += UpDownX_ValueChanged;
+            // 
+            // UpDownY
+            // 
+            UpDownY.Location = new Point(200, 614);
+            UpDownY.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            UpDownY.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            UpDownY.Name = "UpDownY";
+            UpDownY.Size = new Size(136, 39);
+            UpDownY.TabIndex = 18;
+            UpDownY.ValueChanged += UpDownY_ValueChanged;
+            // 
+            // UpDownZ
+            // 
+            UpDownZ.Location = new Point(200, 659);
+            UpDownZ.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            UpDownZ.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            UpDownZ.Name = "UpDownZ";
+            UpDownZ.Size = new Size(136, 39);
+            UpDownZ.TabIndex = 19;
+            UpDownZ.ValueChanged += UpDownZ_ValueChanged;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(255, 245, 245);
             ClientSize = new Size(1374, 846);
+            Controls.Add(UpDownZ);
+            Controls.Add(UpDownY);
+            Controls.Add(UpDownX);
+            Controls.Add(LabelTransform);
+            Controls.Add(LabelZ);
+            Controls.Add(LabelY);
+            Controls.Add(LabelX);
+            Controls.Add(TransformationBox);
             Controls.Add(ObjectList);
             Controls.Add(CamSpeedUpDown);
             Controls.Add(CamSpeedLabel);
@@ -279,6 +376,9 @@
             ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).EndInit();
             ((System.ComponentModel.ISupportInitialize)CamSpeedUpDown).EndInit();
             ContextMenuStrip.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)UpDownX).EndInit();
+            ((System.ComponentModel.ISupportInitialize)UpDownY).EndInit();
+            ((System.ComponentModel.ISupportInitialize)UpDownZ).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -308,5 +408,13 @@
         private ListBox ObjectList;
         private ContextMenuStrip ContextMenuStrip;
         private ToolStripMenuItem deleteToolStripMenuItem;
+        private ComboBox TransformationBox;
+        private Label LabelX;
+        private Label LabelY;
+        private Label LabelZ;
+        private Label LabelTransform;
+        private NumericUpDown UpDownX;
+        private NumericUpDown UpDownY;
+        private NumericUpDown UpDownZ;
     }
 }
