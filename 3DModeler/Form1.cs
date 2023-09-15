@@ -1239,7 +1239,7 @@ namespace _3DModeler
 
             Mat4x4 matTranslate = Matrix_MakeTranslation(mesh.Translation[0], mesh.Translation[1], mesh.Translation[2]);
             Mat4x4 matScale = Matrix_MakeScale(mesh.Scale[0], mesh.Scale[1], mesh.Scale[2]);
-            Mat4x4 matRotate = Matrix_MakeRotationX(mesh.Rotation[0]) * Matrix_MakeRotationY(mesh.Rotation[1]) * Matrix_MakeRotationZ(mesh.Rotation[2]);
+            Mat4x4 matRotate = Matrix_MakeRotationXDegrees(mesh.Rotation[0]) * Matrix_MakeRotationYDegrees(mesh.Rotation[1]) * Matrix_MakeRotationZDegrees(mesh.Rotation[2]);
             return matScale * matRotate * matTranslate;
         }
 

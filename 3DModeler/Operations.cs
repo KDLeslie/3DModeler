@@ -188,6 +188,19 @@ namespace _3DModeler
             return matrix;
         }
 
+        public static Mat4x4 Matrix_MakeRotationXDegrees(float fAngleDeg)
+        {
+            Mat4x4 matrix = new Mat4x4();
+            float fAngleRad = fAngleDeg * MathF.PI / 180;
+            matrix.m[0, 0] = 1.0f;
+            matrix.m[1, 1] = MathF.Cos(fAngleRad);
+            matrix.m[1, 2] = MathF.Sin(fAngleRad);
+            matrix.m[2, 1] = -MathF.Sin(fAngleRad);
+            matrix.m[2, 2] = MathF.Cos(fAngleRad);
+            matrix.m[3, 3] = 1.0f;
+            return matrix;
+        }
+
         public static Mat4x4 Matrix_MakeRotationY(float fAngleRad)
         {
             Mat4x4 matrix = new Mat4x4();
@@ -200,6 +213,19 @@ namespace _3DModeler
             return matrix;
         }
 
+        public static Mat4x4 Matrix_MakeRotationYDegrees(float fAngleDeg)
+        {
+            Mat4x4 matrix = new Mat4x4();
+            float fAngleRad = fAngleDeg * MathF.PI / 180;
+            matrix.m[0, 0] = MathF.Cos(fAngleRad);
+            matrix.m[0, 2] = MathF.Sin(fAngleRad);
+            matrix.m[2, 0] = -MathF.Sin(fAngleRad);
+            matrix.m[1, 1] = 1.0f;
+            matrix.m[2, 2] = MathF.Cos(fAngleRad);
+            matrix.m[3, 3] = 1.0f;
+            return matrix;
+        }
+
         public static Mat4x4 Matrix_MakeRotationZ(float fAngleRad)
         {
             Mat4x4 matrix = new Mat4x4();
@@ -209,6 +235,19 @@ namespace _3DModeler
             matrix.m[1,1] = MathF.Cos(fAngleRad);
             matrix.m[2,2] = 1.0f;
             matrix.m[3,3] = 1.0f;
+            return matrix;
+        }
+
+        public static Mat4x4 Matrix_MakeRotationZDegrees(float fAngleDeg)
+        {
+            Mat4x4 matrix = new Mat4x4();
+            float fAngleRad = fAngleDeg * MathF.PI / 180;
+            matrix.m[0, 0] = MathF.Cos(fAngleRad);
+            matrix.m[0, 1] = MathF.Sin(fAngleRad);
+            matrix.m[1, 0] = -MathF.Sin(fAngleRad);
+            matrix.m[1, 1] = MathF.Cos(fAngleRad);
+            matrix.m[2, 2] = 1.0f;
+            matrix.m[3, 3] = 1.0f;
             return matrix;
         }
 
