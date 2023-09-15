@@ -4,7 +4,7 @@ A primitive, Blender inspired, personal project that can view and edit Wavefront
 
 ## Features
 - Can load OBJ files and their corresponding MTL files and view objects using a first-person shooter style control scheme
-- Can translate, rotate (about the origin) and scale (about the origin) objects and save changes made to OBJ files
+- Can translate, rotate, and scale objects and save changes made to OBJ files
 - Can toggle between different display options such as displaying wireframe, shading, and/or textures
 
 ### Planned to be Added
