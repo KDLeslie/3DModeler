@@ -1,19 +1,16 @@
 # 3DModeler
-A primitive, Blender inspired, personal project that can view (and eventually edit) OBJ files.
-![image](https://github.com/KDLeslie/3DModeler/assets/139406690/9dd03c94-b9ec-407d-abaa-4f71124c473d)
+A primitive, Blender inspired, personal project that can view and edit Wavefront OBJ files.
+![image](https://github.com/KDLeslie/3DModeler/assets/139406690/52c3d287-680c-4f9d-b9dc-9173f7e873d5)
 
 ## Features
 - Can load OBJ files and their corresponding MTL files and view objects using a first-person shooter style control scheme
-- Can save changes made to OBJ files (only changes that can currently be made are adding cubes)
+- Can translate, rotate, and scale objects and save changes made to OBJ files
 - Can toggle between different display options such as displaying wireframe, shading, and/or textures
 
-### Coming Soon
+### Planned to be Added
 - Adjustable viewport background colour
 - Adjustable field of view
 - Adjustable pixel width/height
-- Selectable objects
-- Transformations (scaling, translating, rotating) of objects
-- Deletion of objects
 - Addition of shapes such as cones, cylinders, and spheres
 - Processing material template library data (other than just the texture file)
 
@@ -28,6 +25,8 @@ A primitive, Blender inspired, personal project that can view (and eventually ed
 - "L" moves the camera along the negative y-axis
 - "K" moves the camera along the positive x-axis
 - ";" moves the camera along the negative x-axis
+- Clicking and dragging horizontally rotates the world around the y-axis
+- Clicking and dragging vertically rotates the world around the x-axis
   
 ## Resources
 https://github.com/OneLoneCoder/Javidx9/tree/master/ConsoleGameEngine/BiggerProjects/Engine3D
