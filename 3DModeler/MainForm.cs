@@ -1,26 +1,24 @@
-using System;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using static _3DModeler.Operations;
 
 namespace _3DModeler
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
         }
         Stopwatch Stopwatch = new Stopwatch(); // Stores the total time from start
         Viewport MainView = new Viewport(); // The interface that displays the 3D graphics
-        int FrameCount = 0; // Stores how many frames are rendered each second
+        int FrameCount = 0; // Counts how many frames were rendered. Reset each second
         int FPS = 0; // Stores the current frame rate of the viewport
         float FrameTime = 0; // Stores the cumulative time between frames         
-        float Tick = 0; // A time variable showing the point in time before rendering the current frame
-        float Tock = 0; // A time variable showing the point in time before rendering the last frame
+        float Tick = 0; // A time variable storing the point in time right before rendering the current frame
+        float Tock = 0; // A time variable storing the point in time right before rendering the last frame
         float ElapsedTime = 0;  // Stores the time between each frame in seconds
         List<Mesh> Meshes = new List<Mesh>(); // Stores each mesh loaded from an obj file
         PointF LastCursorPosition;
@@ -40,18 +38,19 @@ namespace _3DModeler
             { Keys.F, false },
         };
 
+        // A structure used for storing face information for a 3 vertex polygon
         struct Triangle
         {
             public Triangle() { }
-            public Triangle(ref Triangle tri)
+            public Triangle(Triangle tri)
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    this.p[i] = tri.p[i];
-                    this.t[i] = tri.t[i];
+                    this.p[i] = new Vec3D(tri.p[i]);
+                    this.t[i] = new Vec2D(tri.t[i]);
                 }
                 this.lum = tri.lum;
-                this.normal = tri.normal;
+                this.normal = new Vec3D(tri.normal);
                 this.drawSide0_1 = tri.drawSide0_1;
                 this.drawSide1_2 = tri.drawSide1_2;
                 this.drawSide2_0 = tri.drawSide2_0;
@@ -74,9 +73,9 @@ namespace _3DModeler
 
             public Vec3D[] p = new Vec3D[3]; // Stores vertex coordinates for the triangle
             public Vec2D[] t = new Vec2D[3]; // Stores texel coordinates for each vertex
-            public float lum = 0; // Calculated luminosity for the triangle based on light source
+            public float lum = 0; // 0-1 luminosity value for the triangle based on a light source
             public Vec3D normal = new Vec3D(); // Normal vector of the triangle
-            // A small hack used to draw the wireframe of a quadrilateral
+            // Small hacks used to draw the wireframe of a quadrilateral
             // correctly. Eventually will also be used to fix the wireframe
             // of clipped triangles
             public bool drawSide0_1 = true;
@@ -84,6 +83,7 @@ namespace _3DModeler
             public bool drawSide2_0 = true;
         }
 
+        // A structure used for storing face information for a 4 vertex polygon
         struct Quadrilateral
         {
             public Quadrilateral() { }
@@ -97,7 +97,6 @@ namespace _3DModeler
                 this.lum = quad.lum;
                 this.normal = quad.normal;
             }
-            // A quadrilateral value type used to present triangles in 3D objects
             public Quadrilateral(Vec3D p1, Vec3D p2, Vec3D p3, Vec3D p4)
             {
                 this.p[0] = p1;
@@ -117,13 +116,13 @@ namespace _3DModeler
                 this.t[3] = t4;
             }
 
-            public Vec3D[] p = new Vec3D[4]; // Stores vertex coordinates for the quadrilateral
-            public Vec2D[] t = new Vec2D[4]; // Stores texel coordinates for each vertex
-            public float lum = 0; // Calculated luminosity for the quadrilateral based on the light source
-            public Vec3D normal = new Vec3D(); // Normal vector for the quadrilateral
+            public Vec3D[] p = new Vec3D[4];
+            public Vec2D[] t = new Vec2D[4];
+            public float lum = 0;
+            public Vec3D normal = new Vec3D();
         }
 
-        // A structure used for storing mesh information for a 3D object
+        // A structure used for storing information for a 3D object
         struct Mesh
         {
             public Mesh() { }
@@ -132,28 +131,29 @@ namespace _3DModeler
             public List<Triangle> tris = new List<Triangle>();
             public List<Quadrilateral> quads = new List<Quadrilateral>();
             public Material material = new Material(); // Stores the mesh's material data
-            public int[] Translation = new int[3] { 0, 0, 0 };
-            public int[] Rotation = new int[3] { 0, 0, 0 };
-            public int[] Scale = new int[3] { 1, 1, 1 };
-
+            public float[] translation = { 0, 0, 0 }; // object's translation w.r.t origin
+            public float[] rotation = { 0, 0, 0 }; // object's rotation (degrees) w.r.t origin 
+            public float[] scale = { 1, 1, 1 }; // object's scale w.r.t origin
         }
+
+        // A structure containing the material information for each mesh.
         // Currently only used for texture information
         struct Material
         {
             public Material() { }
-            public float Ns = 250;
-            public float[] Ka = new float[3] { 1, 1, 1 };
-            public float[] Kd = new float[3];
-            public float[] Ks = new float[3];
-            public float[] Ke = new float[3];
-            public float Ni = 1.45f;
+            public float ns = 250;
+            public float[] ka = { 1, 1, 1 };
+            public float[] kd = { 0, 0, 0 };
+            public float[] ks = { 0, 0, 0 };
+            public float[] ke = { 0, 0, 0 };
+            public float ni = 1.45f;
             public float d = 1;
             public int illum = 2;
             public bool hasTexture = false;
             public string texturePath = "";
             public DirectBitmap texture = new DirectBitmap();
         }
-        // A class that contains all the information regarding a view into the world
+        // A class containing the information pertaining to a certain view into the world
         class Viewport
         {
             public Viewport() { }
@@ -167,42 +167,41 @@ namespace _3DModeler
             }
             public Mat4x4 ProjMat = new Mat4x4(); // Matrix that converts from view space to screen space
             public Vec3D CameraPosition = new Vec3D(0, 0, -5); // Location of camera in world space
-            public Vec3D LookDirection = new Vec3D(); // Direction vector along the direction camera points
+            public Vec3D LookDirection = new Vec3D(); // Direction the camera looks along
             public float Pitch { get; set; } // Camera rotation about the x-axis
             public float Yaw { get; set; } // Camera rotation about the y-axis
-            public float ThetaX { get; set; } // World rotation around x-axis
-            public float ThetaY { get; set; } // World rotation around y-axis
-            public float ThetaZ { get; set; } // World rotation around z-axis
+            public float[] Thetas { get; set; } = { 0, 0, 0 }; // World rotation around x,y, and z axes (only changes the view)
             public int ScreenWidth { get; set; }
             public int ScreenHeight { get; set; }
             public int PixelWidth { get; set; }
             public int PixelHeight { get; set; }
-            public float[] DepthBuffer { get; set; } = new float[0]; // Used to determine the z-depth of each screen pixel
-            public DirectBitmap Frame { get; set; } = new DirectBitmap(1, 1); // A bitmap representing the frame drawn to the viewport
+            public float[] DepthBuffer { get; set; } = new float[0]; // Stores the z-depth of each screen pixel
+            public DirectBitmap Frame { get; set; } = new DirectBitmap(1, 1); // A bitmap of the frame drawn to the viewport
 
-            // Takes in a plane and a triangle and creates 0-2 new triangles based
-            // on how the triangle intersects the plane. Returns the number of new
-            // triangles created.
+            // Takes in a plane, its normal, and a triangle to be clipped against the plane. It
+            // creates 0-2 new triangles based on how the triangle intersects the plane, passed
+            // out through reference parameters. Returns the number of new triangles created.
+            // (Clipping currently breaks wireframe)
             public int Triangle_ClipAgainstPlane(Vec3D plane_p, Vec3D plane_n, Triangle in_tri, ref Triangle out_tri1, ref Triangle out_tri2)
             {
                 // Make sure plane normal is indeed normal
-                plane_n = Vector_Normalize(ref plane_n);
+                plane_n = Normalize(ref plane_n);
 
                 // Return signed shortest distance from point to plane, plane normal must be normalized
                 Func<Vec3D, float> dist = (Vec3D p) =>
                 {
-                    return (Vector_DotProduct(ref plane_n, ref p) - Vector_DotProduct(ref plane_n, ref plane_p));
+                    return (DotProduct(ref plane_n, ref p) - DotProduct(ref plane_n, ref plane_p));
                 };
 
-                // Create two temporary storage arrays to classify points either side of plane
-                // If distance sign is positive, point lies on "inside" of plane
-                Vec3D[] inside_points = new Vec3D[3] { new Vec3D(), new Vec3D(), new Vec3D() };
+                // Create two temporary storage arrays to classify points on either side of the plane
+                // If the distance sign is positive, point lies on the "inside" of the plane
+                Vec3D[] inside_points = { new Vec3D(), new Vec3D(), new Vec3D() };
                 int nInsidePointCount = 0;
-                Vec3D[] outside_points = new Vec3D[3] { new Vec3D(), new Vec3D(), new Vec3D() };
+                Vec3D[] outside_points = { new Vec3D(), new Vec3D(), new Vec3D() };
                 int nOutsidePointCount = 0;
-                Vec2D[] inside_tex = new Vec2D[3] { new Vec2D(), new Vec2D(), new Vec2D() };
+                Vec2D[] inside_tex = { new Vec2D(), new Vec2D(), new Vec2D() };
                 int nInsideTexCount = 0;
-                Vec2D[] outside_tex = new Vec2D[3] { new Vec2D(), new Vec2D(), new Vec2D() };
+                Vec2D[] outside_tex = { new Vec2D(), new Vec2D(), new Vec2D() };
                 int nOutsideTexCount = 0;
 
                 // Get signed distance of each point in triangle to plane
@@ -210,11 +209,14 @@ namespace _3DModeler
                 float d1 = dist(in_tri.p[1]);
                 float d2 = dist(in_tri.p[2]);
 
+                // Positive distance means the point is in the direction of the plane normal
+                // i.e. it is an inside point
                 if (d0 >= 0)
                 {
                     inside_points[nInsidePointCount++] = in_tri.p[0];
                     inside_tex[nInsideTexCount++] = in_tri.t[0];
                 }
+                // Otherwise, it is an outside point
                 else
                 {
                     outside_points[nOutsidePointCount++] = in_tri.p[0];
@@ -274,12 +276,12 @@ namespace _3DModeler
                     // but the two new points are at the locations where the 
                     // original sides of the triangle (lines) intersect with the plane
                     float t = 0;
-                    out_tri1.p[1] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref outside_points[0], ref t);
+                    out_tri1.p[1] = IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref outside_points[0], ref t);
                     out_tri1.t[1].u = t * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
                     out_tri1.t[1].v = t * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
                     out_tri1.t[1].w = t * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
 
-                    out_tri1.p[2] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref outside_points[1], ref t);
+                    out_tri1.p[2] = IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref outside_points[1], ref t);
                     out_tri1.t[2].u = t * (outside_tex[1].u - inside_tex[0].u) + inside_tex[0].u;
                     out_tri1.t[2].v = t * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v;
                     out_tri1.t[2].w = t * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w;
@@ -289,7 +291,7 @@ namespace _3DModeler
                 else if (nInsidePointCount == 2 && nOutsidePointCount == 1)
                 {
                     // Triangle should be clipped. As two points lie inside the plane,
-                    // the clipped triangle becomes a "quad". Fortunately, we can
+                    // the clipped triangle becomes a quad. Fortunately, we can
                     // represent a quad with two new triangles
 
                     // Copy appearance info to new triangles
@@ -304,46 +306,41 @@ namespace _3DModeler
                     out_tri1.t[0] = inside_tex[0];
                     out_tri1.t[1] = inside_tex[1];
                     float t = 0;
-                    out_tri1.p[2] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref outside_points[0], ref t);
+                    out_tri1.p[2] = IntersectPlane(ref plane_p, ref plane_n, ref inside_points[0], ref outside_points[0], ref t);
                     out_tri1.t[2].u = t * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
                     out_tri1.t[2].v = t * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
                     out_tri1.t[2].w = t * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
 
-                    // The second triangle is composed of one of he inside points, a
+                    // The second triangle is composed of one of the inside points, a
                     // new point determined by the intersection of the other side of the 
                     // triangle and the plane, and the newly created point above
                     out_tri2.p[0] = inside_points[1];
                     out_tri2.t[0] = inside_tex[1];
                     out_tri2.p[1] = out_tri1.p[2];
                     out_tri2.t[1] = out_tri1.t[2];
-                    out_tri2.p[2] = Vector_IntersectPlane(ref plane_p, ref plane_n, ref inside_points[1], ref outside_points[0], ref t);
+                    out_tri2.p[2] = IntersectPlane(ref plane_p, ref plane_n, ref inside_points[1], ref outside_points[0], ref t);
                     out_tri2.t[2].u = t * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u;
                     out_tri2.t[2].v = t * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v;
                     out_tri2.t[2].w = t * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w;
 
-                    return 2; // Return two newly formed triangles which form a quad
+                    return 2; // Return two newly formed triangles
                 }
                 else
                 {
                     return 0;
                 }
             }
-            // Prepares each triangle to be drawn. Each triangle that is ready
-            // to be drawn is stored in the list that's passed in as an parameter
-            public void PrepareForRasterization(Mat4x4 worldMat, Mat4x4 matView, Mat4x4 matTransform, Triangle tri, ref List<Triangle> vecTrianglesToRaster,
+            // Prepares each triangle for drawing. Requires the world, view, and triangle
+            // transform matrices, the triangle, and bool of whether to cull triangles.
+            // The triangle is then added to the list passed in as an argument.
+            public void PrepareForRasterization(Triangle tri, Mat4x4 worldMat, Mat4x4 viewMat, Mat4x4 triMat, List<Triangle> trianglesToRaster,
                 bool culling)
             {
-                Triangle triTransformed = new Triangle();
-                // World Matrix Transform
-                triTransformed.p[0] = tri.p[0] * worldMat * matTransform;
-                triTransformed.p[1] = tri.p[1] * worldMat * matTransform;
-                triTransformed.p[2] = tri.p[2] * worldMat * matTransform;
-                triTransformed.t[0] = tri.t[0];
-                triTransformed.t[1] = tri.t[1];
-                triTransformed.t[2] = tri.t[2];
-                triTransformed.drawSide0_1 = tri.drawSide0_1;
-                triTransformed.drawSide1_2 = tri.drawSide1_2;
-                triTransformed.drawSide2_0 = tri.drawSide2_0;
+                Triangle triTransformed = new Triangle(tri);
+                // Transform the triangle
+                triTransformed.p[0] = tri.p[0] * worldMat * triMat;
+                triTransformed.p[1] = tri.p[1] * worldMat * triMat;
+                triTransformed.p[2] = tri.p[2] * worldMat * triMat;
 
                 // Calculate triangle's Normal 
                 Vec3D normal, line1, line2;
@@ -352,41 +349,31 @@ namespace _3DModeler
                 line1 = triTransformed.p[1] - triTransformed.p[0];
                 line2 = triTransformed.p[2] - triTransformed.p[0];
 
-                // Take the cross product of lines to get normal to triangle surface
-                normal = Vector_CrossProduct(ref line1, ref line2);
-                normal = Vector_Normalize(ref normal);
+                // Take the cross product of lines to get normal to triangle's surface
+                normal = CrossProduct(ref line1, ref line2);
+                normal = Normalize(ref normal);
 
                 // Get Ray from camera to triangle
                 Vec3D vCameraRay = triTransformed.p[0] - CameraPosition;
 
-                // If ray is aligned with normal then triangle is visible
-                // if not it is culled, in other words, triangles with normals 
-                // facing away from the camera won't be seen. If culling is 
-                // disabled we draw the triangles regardless. 
-                if (Vector_DotProduct(ref normal, ref vCameraRay) < 0.0f | !culling)
+                // Cull triangles with normals pointing away from the camera.
+                // If culling is disabled we draw the triangles regardless. 
+                if (DotProduct(ref normal, ref vCameraRay) < 0.0f | !culling)
                 {
                     // Illumination
                     Vec3D light_direction = new Vec3D(0.0f, -1.0f, 1.0f);
-                    light_direction = Vector_Normalize(ref light_direction);
-                    // How "aligned" are light direction and triangle surface normal?
+                    light_direction = Normalize(ref light_direction);
                     // The less the triangle normal and the light direction are aligned
                     // the dimmer the triangle. Normal and light vectors are in opposite
                     // directions so we negate the dot product
-                    float lum = MathF.Max(0.1f, -Vector_DotProduct(ref light_direction, ref normal));
+                    float lum = MathF.Max(0.1f, -DotProduct(ref light_direction, ref normal));
                     triTransformed.lum = lum;
 
                     // Convert World Space --> View Space
-                    Triangle triViewed = new Triangle();
-                    triViewed.p[0] = triTransformed.p[0] * matView;
-                    triViewed.p[1] = triTransformed.p[1] * matView;
-                    triViewed.p[2] = triTransformed.p[2] * matView;
-                    triViewed.lum = triTransformed.lum;
-                    triViewed.drawSide0_1 = triTransformed.drawSide0_1;
-                    triViewed.drawSide1_2 = triTransformed.drawSide1_2;
-                    triViewed.drawSide2_0 = triTransformed.drawSide2_0;
-                    triViewed.t[0] = triTransformed.t[0];
-                    triViewed.t[1] = triTransformed.t[1];
-                    triViewed.t[2] = triTransformed.t[2];
+                    Triangle triViewed = new Triangle(triTransformed);
+                    triViewed.p[0] *= viewMat;
+                    triViewed.p[1] *= viewMat;
+                    triViewed.p[2] *= viewMat;
 
                     // Clip the Viewed Triangle against near plane, this could form two additional
                     // triangles.
@@ -399,27 +386,20 @@ namespace _3DModeler
                     for (int n = 0; n < nClippedTriangles; n++)
                     {
                         // Project triangles from 3D --> 2D
-                        // View space -> screen space
-                        Triangle triProjected = new Triangle();
-                        triProjected.p[0] = clipped[n].p[0] * ProjMat;
-                        triProjected.p[1] = clipped[n].p[1] * ProjMat;
-                        triProjected.p[2] = clipped[n].p[2] * ProjMat;
-                        triProjected.lum = clipped[n].lum;
-                        triProjected.drawSide0_1 = clipped[n].drawSide0_1;
-                        triProjected.drawSide1_2 = clipped[n].drawSide1_2;
-                        triProjected.drawSide2_0 = clipped[n].drawSide2_0;
-                        triProjected.t[0] = clipped[n].t[0];
-                        triProjected.t[1] = clipped[n].t[1];
-                        triProjected.t[2] = clipped[n].t[2];
+                        // View space -> Screen space
+                        Triangle triProjected = new Triangle(clipped[n]);
+                        triProjected.p[0] *= ProjMat;
+                        triProjected.p[1] *= ProjMat;
+                        triProjected.p[2] *= ProjMat;
 
                         // Divide the texture coordinates by z-component to add perspective
-                        triProjected.t[0].u = triProjected.t[0].u / triProjected.p[0].w;
-                        triProjected.t[1].u = triProjected.t[1].u / triProjected.p[1].w;
-                        triProjected.t[2].u = triProjected.t[2].u / triProjected.p[2].w;
+                        triProjected.t[0].u /= triProjected.p[0].w;
+                        triProjected.t[1].u /= triProjected.p[1].w;
+                        triProjected.t[2].u /= triProjected.p[2].w;
 
-                        triProjected.t[0].v = triProjected.t[0].v / triProjected.p[0].w;
-                        triProjected.t[1].v = triProjected.t[1].v / triProjected.p[1].w;
-                        triProjected.t[2].v = triProjected.t[2].v / triProjected.p[2].w;
+                        triProjected.t[0].v /= triProjected.p[0].w;
+                        triProjected.t[1].v /= triProjected.p[1].w;
+                        triProjected.t[2].v /= triProjected.p[2].w;
 
                         // Set texel depth to be reciprocal so we can get the un-normalized
                         // coordinates back
@@ -428,9 +408,9 @@ namespace _3DModeler
                         triProjected.t[2].w = 1.0f / triProjected.p[2].w;
 
                         // Each vertex is divided by the z-component to add perspective
-                        triProjected.p[0] = triProjected.p[0] / triProjected.p[0].w;
-                        triProjected.p[1] = triProjected.p[1] / triProjected.p[1].w;
-                        triProjected.p[2] = triProjected.p[2] / triProjected.p[2].w;
+                        triProjected.p[0] /= triProjected.p[0].w;
+                        triProjected.p[1] /= triProjected.p[1].w;
+                        triProjected.p[2] /= triProjected.p[2].w;
 
                         // We must invert x because our system uses a left-hand coordinate system	
                         triProjected.p[0].x *= -1.0f;
@@ -441,14 +421,14 @@ namespace _3DModeler
                         triProjected.p[1].y *= -1.0f;
                         triProjected.p[2].y *= -1.0f;
 
-                        // Projection Matrix gives results from -1 to +1 through dividing by Z
-                        // so we offset vertices to occupy the screen
+                        // Projection Matrix gives results between -1 and +1 via dividing by Z.
+                        // Offset vertices to be between 0 and 2
                         Vec3D vOffsetView = new Vec3D(1, 1, 0);
-                        triProjected.p[0] = triProjected.p[0] + vOffsetView;
-                        triProjected.p[1] = triProjected.p[1] + vOffsetView;
-                        triProjected.p[2] = triProjected.p[2] + vOffsetView;
+                        triProjected.p[0] += vOffsetView;
+                        triProjected.p[1] += vOffsetView;
+                        triProjected.p[2] += vOffsetView;
 
-                        // vertices are now between 0 and 2 so we scale into view
+                        // Scale vertices to occupy the screen
                         triProjected.p[0].x *= 0.5f * ScreenWidth;
                         triProjected.p[0].y *= 0.5f * ScreenHeight;
                         triProjected.p[1].x *= 0.5f * ScreenWidth;
@@ -456,340 +436,226 @@ namespace _3DModeler
                         triProjected.p[2].x *= 0.5f * ScreenWidth;
                         triProjected.p[2].y *= 0.5f * ScreenHeight;
 
-                        // Store triangle for sorting
-                        vecTrianglesToRaster.Add(triProjected);
+                        // Store triangle for rasterizing
+                        trianglesToRaster.Add(triProjected);
                     }
                 }
             }
-            // Converts a triangle's luminance to an argb color value
-            public Color GetYellowShade(float lum)
-            {
-                return Color.FromArgb(255, (int)(lum * 255), (int)(lum * 255), 0);
-            }
+
+            // Converts a triangle's luminance to grayscale
             public Color GetShade(float lum)
             {
                 return Color.FromArgb(255, (int)(lum * 255), (int)(lum * 255), (int)(lum * 255));
             }
 
-            // Draws a triangle to a bitmap. Depending on whether the user
-            // has toggled shading or texturing, the color information of
-            // each triangle will be used accordingly.
+            // Converts a triangle's luminance to a shade of yellow
+            public Color GetYellowShade(float lum)
+            {
+                return Color.FromArgb(255, (int)(lum * 255), (int)(lum * 255), 0);
+            }
+
+            // Draws a triangle to a bitmap that represents the current frame.
+            // Depending on whether the user has toggled shading or texturing, or
+            // whether the triangle is part of a mesh that's been selected, the color
+            // information of each triangle will be used accordingly.
             public void DrawTriangle(Triangle tri, DirectBitmap texture, bool texturing = false, bool shading = true, bool isSelected = false)
             {
+
+                // Capture relevant triangle information
                 // The pixel domain is integers. Can't move half a pixel
-                int x1 = (int)tri.p[0].x;
-                int y1 = (int)tri.p[0].y;
-                float u1 = tri.t[0].u;
-                float v1 = tri.t[0].v;
-                float w1 = tri.t[0].w;
-
-                int x2 = (int)tri.p[1].x;
-                int y2 = (int)tri.p[1].y;
-                float u2 = tri.t[1].u;
-                float v2 = tri.t[1].v;
-                float w2 = tri.t[1].w;
-
-                int x3 = (int)tri.p[2].x;
-                int y3 = (int)tri.p[2].y;
-                float u3 = tri.t[2].u;
-                float v3 = tri.t[2].v;
-                float w3 = tri.t[2].w;
-
+                int[] xs = { (int)tri.p[0].x, (int)tri.p[1].x, (int)tri.p[2].x };
+                int[] ys = { (int)tri.p[0].y, (int)tri.p[1].y, (int)tri.p[2].y };
+                float[] us = { tri.t[0].u, tri.t[1].u, tri.t[2].u };
+                float[] vs = { tri.t[0].v, tri.t[1].v, tri.t[2].v };
+                float[] ws = { tri.t[0].w, tri.t[1].w, tri.t[2].w };
                 float lum = tri.lum;
 
-                // Swaps the variables so that y1 < y2 < y3
+                // Swaps the variables so that y[0] < y[1] < y[2]
                 // Lower y value = higher up on screen
-                if (y2 < y1)
+                if (ys[1] < ys[0])
                 {
-                    (y1, y2) = (y2, y1);
-                    (x1, x2) = (x2, x1);
-                    (u1, u2) = (u2, u1);
-                    (v1, v2) = (v2, v1);
-                    (w1, w2) = (w2, w1);
+                    (ys[0], ys[1]) = (ys[1], ys[0]);
+                    (xs[0], xs[1]) = (xs[1], xs[0]);
+                    (us[0], us[1]) = (us[1], us[0]);
+                    (vs[0], vs[1]) = (vs[1], vs[0]);
+                    (ws[0], ws[1]) = (ws[1], ws[0]);
                 }
 
-                if (y3 < y1)
+                if (ys[2] < ys[0])
                 {
-                    (y1, y3) = (y3, y1);
-                    (x1, x3) = (x3, x1);
-                    (u1, u3) = (u3, u1);
-                    (v1, v3) = (v3, v1);
-                    (w1, w3) = (w3, w1);
+                    (ys[0], ys[2]) = (ys[2], ys[0]);
+                    (xs[0], xs[2]) = (xs[2], xs[0]);
+                    (us[0], us[2]) = (us[2], us[0]);
+                    (vs[0], vs[2]) = (vs[2], vs[0]);
+                    (ws[0], ws[2]) = (ws[2], ws[0]);
                 }
 
-                if (y3 < y2)
+                if (ys[2] < ys[1])
                 {
-                    (y2, y3) = (y3, y2);
-                    (x2, x3) = (x3, x2);
-                    (u2, u3) = (u3, u2);
-                    (v2, v3) = (v3, v2);
-                    (w2, w3) = (w3, w2);
+                    (ys[1], ys[2]) = (ys[2], ys[1]);
+                    (xs[1], xs[2]) = (xs[2], xs[1]);
+                    (us[1], us[2]) = (us[2], us[1]);
+                    (vs[1], vs[2]) = (vs[2], vs[1]);
+                    (ws[1], ws[2]) = (ws[2], ws[1]);
                 }
 
-                // Variables relating to one side of triangle
-                int dy1 = y2 - y1;
-                int dx1 = x2 - x1;
-                float dv1 = v2 - v1;
-                float du1 = u2 - u1;
-                float dw1 = w2 - w1;
-
-                // Variables relating to other side of triangle
-                int dy2 = y3 - y1;
-                int dx2 = x3 - x1;
-                float dv2 = v3 - v1;
-                float du2 = u3 - u1;
-                float dw2 = w3 - w1;
-
-                // Texel coordinates per pixel
-                float tex_u, tex_v, tex_w;
-
-                // Depicts how much we step in that unit direction per row of pixels
-                float dax_step = 0, dbx_step = 0,
-                    du1_step = 0, dv1_step = 0,
-                    du2_step = 0, dv2_step = 0,
-                    dw1_step = 0, dw2_step = 0;
-
-                // As long as the line is not horizontal, dy will not be zero                
-                if (dy1 != 0)
-                    // How much we step in that unit direction per pixel downwards
-                    dax_step = dx1 / MathF.Abs(dy1);
-                if (dy1 != 0)
-                    du1_step = du1 / MathF.Abs(dy1);
-                if (dy1 != 0)
-                    dv1_step = dv1 / MathF.Abs(dy1);
-                if (dy1 != 0)
-                    dw1_step = dw1 / MathF.Abs(dy1);
-
-                if (dy2 != 0)
-                    dbx_step = dx2 / MathF.Abs(dy2);
-                if (dy2 != 0)
-                    du2_step = du2 / MathF.Abs(dy2);
-                if (dy2 != 0)
-                    dv2_step = dv2 / MathF.Abs(dy2);
-                if (dy2 != 0)
-                    dw2_step = dw2 / MathF.Abs(dy2);
-
-                // As long as the line isn't flat, draw top half of triangle
-                if (dy1 != 0)
+                // We draw half the triangle each time, first the
+                // top half, then the bottom half
+                for (int p = 0; p < 2; p++)
                 {
-                    // For each row of pixels
-                    for (int i = y1; i <= y2; i++)
+                    // Variables relating to one side of the triangle.
+                    // Side changes depending on whether we are
+                    // drawing the top or bottom half
+                    int dy1 = ys[p + 1] - ys[p];
+                    int dx1 = xs[p + 1] - xs[p];
+                    float dv1 = vs[p + 1] - vs[p];
+                    float du1 = us[p + 1] - us[p];
+                    float dw1 = ws[p + 1] - ws[p];
+
+                    // Variables relating to the steepest side of the triangle.
+                    // Steepest side stays the same for both top and bottom halves
+                    // of the triangle
+                    int dy2 = ys[2] - ys[0];
+                    int dx2 = xs[2] - xs[0];
+                    float dv2 = vs[2] - vs[0];
+                    float du2 = us[2] - us[0];
+                    float dw2 = ws[2] - ws[0];
+
+                    // Texel coordinates per pixel
+                    float tex_u, tex_v, tex_w;
+
+                    // Holds how much we step in each coordinate space per row of pixels
+                    float dax_step = 0, dbx_step = 0,
+                        du1_step = 0, dv1_step = 0,
+                        du2_step = 0, dv2_step = 0,
+                        dw1_step = 0, dw2_step = 0;
+
+                    if (dy1 != 0)
+                        dax_step = dx1 / MathF.Abs(dy1);
+                    if (dy1 != 0)
+                        du1_step = du1 / MathF.Abs(dy1);
+                    if (dy1 != 0)
+                        dv1_step = dv1 / MathF.Abs(dy1);
+                    if (dy1 != 0)
+                        dw1_step = dw1 / MathF.Abs(dy1);
+
+                    if (dy2 != 0)
+                        dbx_step = dx2 / MathF.Abs(dy2);
+                    if (dy2 != 0)
+                        du2_step = du2 / MathF.Abs(dy2);
+                    if (dy2 != 0)
+                        dv2_step = dv2 / MathF.Abs(dy2);
+                    if (dy2 != 0)
+                        dw2_step = dw2 / MathF.Abs(dy2);
+
+                    // As long as this side isn't flat, draw first/second half of the triangle
+                    if (dy1 != 0)
                     {
-                        // Get horizontal pixel start and end points
-                        int ax = (int)(x1 + (i - y1) * dax_step);
-                        int bx = (int)(x1 + (i - y1) * dbx_step);
-
-                        // Get start and end points in texel space
-                        float tex_su = u1 + (i - y1) * du1_step;
-                        float tex_sv = v1 + (i - y1) * dv1_step;
-                        float tex_sw = w1 + (i - y1) * dw1_step;
-
-                        float tex_eu = u1 + (i - y1) * du2_step;
-                        float tex_ev = v1 + (i - y1) * dv2_step;
-                        float tex_ew = w1 + (i - y1) * dw2_step;
-                        // Ensure we go from left to right in pixel space and flip any
-                        // correlated components if necessary
-                        if (ax > bx)
+                        // For each row of pixels...
+                        for (int i = ys[p]; i <= ys[p + 1]; i++)
                         {
-                            (ax, bx) = (bx, ax);
-                            (tex_su, tex_eu) = (tex_eu, tex_su);
-                            (tex_sv, tex_ev) = (tex_ev, tex_sv);
-                            (tex_sw, tex_ew) = (tex_ew, tex_sw);
-                        }
+                            // Get start and end pixels for the row
+                            int ax = (int)(xs[p] + (i - ys[p]) * dax_step);
+                            int bx = (int)(xs[0] + (i - ys[0]) * dbx_step);
 
-                        tex_u = tex_su;
-                        tex_v = tex_sv;
-                        tex_w = tex_sw;
+                            // Get start and end texels for the row
+                            float tex_su = us[p] + (i - ys[p]) * du1_step;
+                            float tex_sv = vs[p] + (i - ys[p]) * dv1_step;
+                            float tex_sw = ws[p] + (i - ys[p]) * dw1_step;
 
-                        // Stores interpolation along the line between start and end points
-                        float t = 0.0f;
-                        float tstep = 1.0f / (bx - ax);
+                            float tex_eu = us[0] + (i - ys[0]) * du2_step;
+                            float tex_ev = vs[0] + (i - ys[0]) * dv2_step;
+                            float tex_ew = ws[0] + (i - ys[0]) * dw2_step;
 
-
-                        // For each pixel in the row
-                        for (int j = ax; j < bx; j++)
-                        {
-                            // Position in texel space for each pixel we cross
-                            tex_u = (1.0f - t) * tex_su + t * tex_eu;
-                            tex_v = (1.0f - t) * tex_sv + t * tex_ev;
-                            // z-depth of the pixel. Higher value = closer pixel
-                            tex_w = (1.0f - t) * tex_sw + t * tex_ew;
-                            // If this pixel is closer than the one currently drawn here we draw 
-                            // the new pixel
-                            if (tex_w > DepthBuffer[i * ScreenWidth + j])
+                            // Ensure we go from left to right in pixel space and flip any
+                            // correlated components if necessary
+                            if (ax > bx)
                             {
-                                // Divide by tex_w to get denormalized texel coordinate
-                                float u = (tex_u / tex_w);
-                                // The v axis is in texel space is inverted compared to the y-axis in bitmaps
-                                // 1 - v undoes the inversion
-                                float v = (1 - tex_v / tex_w);
-                                // uv coordinates are between 0 and 1. Anything outside those values will
-                                // be wrapped through repetition 
-                                u = u >= 0 ? u % 1 : (u % 1 + 1.0f) % 1;
-                                v = v >= 0 ? v % 1 : (v % 1 + 1.0f) % 1;
-                                // Scale up texel coordinates to the height and width of the textures
-                                int w = (int)(u * texture.Width);
-                                int h = (int)(v * texture.Height);
-                                if (isSelected)
-                                {
-                                    if (shading)
-                                    {
-                                        Color col = GetYellowShade(lum);
-                                        Frame.SetPixel(j, i, col);
-                                    }
-                                    else
-                                    {
-                                        Frame.SetPixel(j, i, Color.Yellow);
-                                    }
-                                }
-                                else if (texturing)
-                                {
-
-                                    if (shading)
-                                    {
-                                        Color color = texture.GetPixel(w, h);
-                                        // Naïve implementation of shading until mtl
-                                        // processing is added
-                                        color = Color.FromArgb(255, (int)(color.R * lum), (int)(color.G * lum), (int)(color.B * lum));
-                                        Frame.SetPixel(j, i, color);
-                                    }
-                                    else
-                                    {
-                                        Color color = texture.GetPixel(w, h);
-                                        Frame.SetPixel(j, i, color);
-                                    }
-                                }
-                                else
-                                {
-                                    if (shading)
-                                    {
-                                        Color color = GetShade(lum);
-                                        Frame.SetPixel(j, i, color);
-                                    }
-                                    else
-                                    {
-                                        Frame.SetPixel(j, i, Color.White);
-                                    }
-
-                                }
-                                // Update depth buffer
-                                DepthBuffer[i * ScreenWidth + j] = tex_w;
+                                (ax, bx) = (bx, ax);
+                                (tex_su, tex_eu) = (tex_eu, tex_su);
+                                (tex_sv, tex_ev) = (tex_ev, tex_sv);
+                                (tex_sw, tex_ew) = (tex_ew, tex_sw);
                             }
-                            // Update interpolation
-                            t += tstep;
-                        }
-                    }
-                }
 
-                // Recalculate values to work with bottom side of triangle
-                dy1 = y3 - y2;
-                dx1 = x3 - x2;
-                dv1 = v3 - v2;
-                du1 = u3 - u2;
-                dw1 = w3 - w2;
+                            // Stores interpolation along the line between start and end points
+                            float t = 0.0f;
+                            float tstep = 1.0f / (bx - ax);
 
-                if (dy1 != 0)
-                    dax_step = dx1 / MathF.Abs(dy1);
-                if (dy2 != 0)
-                    dbx_step = dx2 / MathF.Abs(dy2);
-
-                du1_step = 0; dv1_step = 0;
-                if (dy1 != 0)
-                    du1_step = du1 / MathF.Abs(dy1);
-                if (dy1 != 0)
-                    dv1_step = dv1 / MathF.Abs(dy1);
-                if (dy1 != 0)
-                    dw1_step = dw1 / MathF.Abs(dy1);
-
-                // As long as the line isn't flat, draw bottom half of triangle
-                if (dy1 != 0)
-                {
-                    for (int i = y2; i <= y3; i++)
-                    {
-                        int ax = (int)(x2 + (i - y2) * dax_step);
-                        int bx = (int)(x1 + (i - y1) * dbx_step);
-                        float tex_su = u2 + (i - y2) * du1_step;
-                        float tex_sv = v2 + (i - y2) * dv1_step;
-                        float tex_sw = w2 + (i - y2) * dw1_step;
-
-                        float tex_eu = u1 + (i - y1) * du2_step;
-                        float tex_ev = v1 + (i - y1) * dv2_step;
-                        float tex_ew = w1 + (i - y1) * dw2_step;
-
-                        if (ax > bx)
-                        {
-                            (ax, bx) = (bx, ax);
-                            (tex_su, tex_eu) = (tex_eu, tex_su);
-                            (tex_sv, tex_ev) = (tex_ev, tex_sv);
-                            (tex_sw, tex_ew) = (tex_ew, tex_sw);
-                        }
-
-                        tex_u = tex_su;
-                        tex_v = tex_sv;
-                        tex_w = tex_sw;
-
-                        float tstep = 1.0f / (bx - ax);
-                        float t = 0.0f;
-
-                        for (int j = ax; j < bx; j++)
-                        {
-                            tex_u = (1.0f - t) * tex_su + t * tex_eu;
-                            tex_v = (1.0f - t) * tex_sv + t * tex_ev;
-                            tex_w = (1.0f - t) * tex_sw + t * tex_ew;
-
-                            if (tex_w > DepthBuffer[i * ScreenWidth + j])
+                            // For each pixel in the row...
+                            for (int j = ax; j < bx; j++)
                             {
-                                float u = (tex_u / tex_w);
-                                float v = (1 - tex_v / tex_w);
-                                u = u >= 0 ? u % 1 : (u % 1 + 1.0f) % 1;
-                                v = v >= 0 ? v % 1 : (v % 1 + 1.0f) % 1;
-                                int w = (int)(u * texture.Width);
-                                int h = (int)(v * texture.Height);
-                                if (isSelected)
+                                // Position in texel space for each pixel we cross
+                                tex_u = (1.0f - t) * tex_su + t * tex_eu;
+                                tex_v = (1.0f - t) * tex_sv + t * tex_ev;
+                                // z-depth of the pixel. Higher value = closer pixel
+                                tex_w = (1.0f - t) * tex_sw + t * tex_ew;
+                                // If this pixel is closer than the one currently drawn here we draw 
+                                // the new pixel
+                                if (tex_w > DepthBuffer[i * ScreenWidth + j])
                                 {
-                                    if (shading)
+                                    // Divide by tex_w to denormalize texel coordinates
+                                    float u = (tex_u / tex_w);
+                                    // The v-axis in texel space is inverted as opposed to the y-axis in bitmaps.
+                                    // 1 - v undoes the inversion
+                                    float v = (1 - tex_v / tex_w);
+                                    // uv coordinates are between 0 and 1. Anything outside those values will
+                                    // be wrapped via repetition 
+                                    u = u >= 0 ? u % 1 : (u % 1 + 1.0f) % 1;
+                                    v = v >= 0 ? v % 1 : (v % 1 + 1.0f) % 1;
+                                    // Scale up texel coordinates to the height and width of the textures
+                                    int w = (int)(u * texture.Width);
+                                    int h = (int)(v * texture.Height);
+                                    // If the triangle is part of a mesh that is currently selected, we 
+                                    // colour it yellow to indicate that it's selected
+                                    if (isSelected)
                                     {
-                                        Color col = GetYellowShade(lum);
-                                        Frame.SetPixel(j, i, col);
+                                        if (shading)
+                                        {
+                                            Color col = GetYellowShade(lum);
+                                            Frame.SetPixel(j, i, col);
+                                        }
+                                        else
+                                        {
+                                            Frame.SetPixel(j, i, Color.Yellow);
+                                        }
+                                    }
+                                    // If texturing is enabled...
+                                    else if (texturing)
+                                    {
+                                        // If shading is enabled
+                                        if (shading)
+                                        {
+                                            // Get the texel via the u,v-coordinates
+                                            Color color = texture.GetPixel(w, h);
+                                            // Perform basic shading implementation until mtl processing is added
+                                            color = Color.FromArgb(255, (int)(color.R * lum), (int)(color.G * lum), (int)(color.B * lum));
+                                            Frame.SetPixel(j, i, color);
+                                        }
+                                        else
+                                        {
+                                            Color color = texture.GetPixel(w, h);
+                                            Frame.SetPixel(j, i, color);
+                                        }
                                     }
                                     else
                                     {
-                                        Frame.SetPixel(j, i, Color.Yellow);
-                                    }
-                                }
-                                else if (texturing)
-                                {
+                                        if (shading)
+                                        {
+                                            Color color = GetShade(lum);
+                                            Frame.SetPixel(j, i, color);
+                                        }
+                                        else
+                                        {
+                                            Frame.SetPixel(j, i, Color.White);
+                                        }
 
-                                    if (shading)
-                                    {
-                                        Color color = texture.GetPixel(w, h);
-                                        // Naïve implementation of shading until mtl
-                                        // processing is added
-                                        color = Color.FromArgb(255, (int)(color.R * lum), (int)(color.G * lum), (int)(color.B * lum));
-                                        Frame.SetPixel(j, i, color);
                                     }
-                                    else
-                                    {
-                                        Color color = texture.GetPixel(w, h);
-                                        Frame.SetPixel(j, i, color);
-                                    }
+                                    // Update depth buffer
+                                    DepthBuffer[i * ScreenWidth + j] = tex_w;
                                 }
-                                else
-                                {
-                                    if (shading)
-                                    {
-                                        Color color = GetShade(lum);
-                                        Frame.SetPixel(j, i, color);
-                                    }
-                                    else
-                                    {
-                                        Frame.SetPixel(j, i, Color.White);
-                                    }
-
-                                }
-                                DepthBuffer[i * ScreenWidth + j] = tex_w;
+                                // Update interpolation
+                                t += tstep;
                             }
-                            t += tstep;
                         }
                     }
                 }
@@ -803,7 +669,7 @@ namespace _3DModeler
                 int dx = Math.Abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
                 int dy = Math.Abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
                 int err = (dx > dy ? dx : -dy) / 2, e2;
-                for (; ; )
+                while (true)
                 {
                     Frame.SetPixel(x0, y0, color);
                     if (x0 == x1 && y0 == y1) break;
@@ -825,7 +691,7 @@ namespace _3DModeler
         // A bitmap class used for efficient getting and setting of pixels
         // by A.Konzel. Taken from the link below
         // https://stackoverflow.com/questions/24701703/c-sharp-faster-alternatives-to-setpixel-and-getpixel-for-bitmaps-for-windows-f
-        public class DirectBitmap : IDisposable
+        class DirectBitmap : IDisposable
         {
             public DirectBitmap() { }
 
@@ -843,10 +709,11 @@ namespace _3DModeler
                 IntPtr ptr = data.Scan0;
                 // Copy the ARGB values from the temporary bitmap to a new pixel data array
                 Marshal.Copy(ptr, Pixels, 0, Width * Height);
+                // Get a handle to the pixel data
                 BitsHandle = GCHandle.Alloc(Pixels, GCHandleType.Pinned);
-                // Create a new bitmap that points to that array;
+                // Create a new bitmap that uses the array for its pixel information
                 Bitmap = new Bitmap(Width, Height, Width * 4, PixelFormat.Format32bppArgb, BitsHandle.AddrOfPinnedObject());
-                // Unlock the bits.
+                // Dispose of the temporary bitmap
                 bitmap.UnlockBits(data);
                 bitmap.Dispose();
             }
@@ -874,7 +741,7 @@ namespace _3DModeler
                 Bitmap = new Bitmap(Width, Height, Width * 4, PixelFormat.Format32bppArgb, BitsHandle.AddrOfPinnedObject());
             }
 
-            public Bitmap Bitmap { get; private set; } // The actual bitmap
+            public Bitmap Bitmap { get; private set; }
             public Int32[] Pixels { get; private set; } // Color data for each pixel
             public bool Disposed { get; private set; }
             public int Height { get; private set; }
@@ -902,11 +769,13 @@ namespace _3DModeler
         }
 
         // Reads and loads in objects from an obj file. Returns false if
-        // no objects could be loaded.
-        private bool LoadObjectsFromFile(string filename, ref string materialFileName)
+        // no objects could be loaded. TODO: Add support for obj files that
+        // contain normal information
+        private bool LoadObjectsFromFile(string filename, ref string materialFilename)
         {
-            // Assume no mtl file unless one is given in the file
-            materialFileName = "";
+            // Assume no material template library file
+            // unless one is given in the file
+            materialFilename = "";
 
             Mesh mesh = new Mesh();
 
@@ -916,7 +785,7 @@ namespace _3DModeler
                 // The 'using' statement also closes the StreamReader
                 using (StreamReader sr = new StreamReader(filename))
                 {
-                    // Store the vertices and texel coordinates in parallel lists.
+                    // Store the vertex and texel coordinates in parallel lists.
                     List<Vec3D> verts = new List<Vec3D>();
                     List<Vec2D> texs = new List<Vec2D>();
                     string? line;
@@ -927,15 +796,15 @@ namespace _3DModeler
                         if (line.Length == 0)
                             continue;
 
-                        // If the line begins with 'm' it specifies the material library template file
+                        // If the line begins with 'm' it specifies the mtl library template file
                         if (line[0] == 'm')
                         {
-                            // Split the line via spaces since the first string specifies the
+                            // Split the line via spaces. The first string specifies the
                             // type of line.
                             string[] name = line.Split(' ');
                             // Sometimes the file name has spaces in it so rebuild the original
-                            // line without the first part
-                            materialFileName = string.Join(" ", name.Skip(1).ToArray());
+                            // line without the first string
+                            materialFilename = string.Join(" ", name.Skip(1).ToArray());
                         }
                         // 'o' specifies a new object group
                         else if (line[0] == 'o')
@@ -983,7 +852,7 @@ namespace _3DModeler
                             mesh.materialName = line.Split(' ')[1];
                         }
                         // 'f' specifies vertex and texel coordinates for each face
-                        // through indices into each list
+                        // via indices into each list
                         else if (line[0] == 'f')
                         {
                             // Lines without '/' do not have texel (or normal) coordinates listed
@@ -1106,6 +975,7 @@ namespace _3DModeler
                         // Catch any empty lines
                         if (line.Length == 0)
                             continue;
+
                         // 'n' specifies the material's identifying name
                         if (line[0] == 'n')
                         {
@@ -1122,12 +992,12 @@ namespace _3DModeler
                             if (line[1] == 's')
                             {
                                 string[] ns = line.Split(' ');
-                                material.Ns = float.Parse(ns[1]);
+                                material.ns = float.Parse(ns[1]);
                             }
                             if (line[1] == 'i')
                             {
                                 string[] ni = line.Split(' ');
-                                material.Ni = float.Parse(ni[1]);
+                                material.ni = float.Parse(ni[1]);
                             }
                         }
                         else if (line[0] == 'K')
@@ -1135,30 +1005,30 @@ namespace _3DModeler
                             if (line[1] == 'a')
                             {
                                 string[] ka = line.Split(' ');
-                                material.Ka[0] = float.Parse(ka[1]);
-                                material.Ka[1] = float.Parse(ka[2]);
-                                material.Ka[2] = float.Parse(ka[3]);
+                                material.ka[0] = float.Parse(ka[1]);
+                                material.ka[1] = float.Parse(ka[2]);
+                                material.ka[2] = float.Parse(ka[3]);
                             }
                             else if (line[1] == 'd')
                             {
                                 string[] kd = line.Split(' ');
-                                material.Kd[0] = float.Parse(kd[1]);
-                                material.Kd[1] = float.Parse(kd[2]);
-                                material.Kd[2] = float.Parse(kd[3]);
+                                material.kd[0] = float.Parse(kd[1]);
+                                material.kd[1] = float.Parse(kd[2]);
+                                material.kd[2] = float.Parse(kd[3]);
                             }
                             else if (line[1] == 's')
                             {
                                 string[] ks = line.Split(' ');
-                                material.Ks[0] = float.Parse(ks[1]);
-                                material.Ks[1] = float.Parse(ks[2]);
-                                material.Ks[2] = float.Parse(ks[3]);
+                                material.ks[0] = float.Parse(ks[1]);
+                                material.ks[1] = float.Parse(ks[2]);
+                                material.ks[2] = float.Parse(ks[3]);
                             }
                             else if (line[1] == 'e')
                             {
                                 string[] ke = line.Split(' ');
-                                material.Ke[0] = float.Parse(ke[1]);
-                                material.Ke[1] = float.Parse(ke[2]);
-                                material.Ke[2] = float.Parse(ke[3]);
+                                material.ke[0] = float.Parse(ke[1]);
+                                material.ke[1] = float.Parse(ke[2]);
+                                material.ke[2] = float.Parse(ke[3]);
                             }
 
                         }
@@ -1172,7 +1042,7 @@ namespace _3DModeler
                             string[] i = line.Split(' ');
                             material.illum = int.Parse(i[1]);
                         }
-                        // 'n' specifies the material's texture path
+                        // 'm' specifies the material's texture path
                         else if (line[0] == 'm')
                         {
                             string[] texName = line.Split(' ');
@@ -1195,7 +1065,7 @@ namespace _3DModeler
                                 }
                                 catch (ArgumentException)
                                 {
-                                    MessageBox.Show($"Could not find texture file '{material.texturePath}'");
+                                    MessageBox.Show($"Could not find texture file '{material.texturePath}'", "File Load Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                 }
                             }
                         }
@@ -1222,42 +1092,106 @@ namespace _3DModeler
             MainView.LookDirection = new Vec3D();
             MainView.Yaw = 0;
             MainView.Pitch = 0;
-            MainView.ThetaX = 0;
-            MainView.ThetaY = 0;
-            MainView.ThetaZ = 0;
+            MainView.Thetas[0] = 0;
+            MainView.Thetas[1] = 0;
+            MainView.Thetas[2] = 0;
             // CameraSpeedSlider.Value = 8;
         }
 
+        // Returns the world to a default state
         private void ResetWorld()
         {
             Meshes.Clear();
             ObjectList.Items.Clear();
         }
 
-        private Mat4x4 GetTransformationMatrix(Mesh mesh)
+        // Gets a transformation matrix to transform each tri according to its own
+        // specific transformation data. Unlike world transforms, these have permanent
+        // affects on the triangle
+        private Mat4x4 GetTriTransformationMatrix(Mesh mesh)
         {
 
-            Mat4x4 matTranslate = Matrix_MakeTranslation(mesh.Translation[0], mesh.Translation[1], mesh.Translation[2]);
-            Mat4x4 matScale = Matrix_MakeScale(mesh.Scale[0], mesh.Scale[1], mesh.Scale[2]);
-            Mat4x4 matRotate = Matrix_MakeRotationXDegrees(mesh.Rotation[0]) * Matrix_MakeRotationYDegrees(mesh.Rotation[1]) * Matrix_MakeRotationZDegrees(mesh.Rotation[2]);
+            Mat4x4 matTranslate = MakeTranslation(mesh.translation[0], mesh.translation[1], mesh.translation[2]);
+            Mat4x4 matScale = MakeScale(mesh.scale[0], mesh.scale[1], mesh.scale[2]);
+            Mat4x4 matRotate = MakeRotation(mesh.rotation[0], degrees: true) * MakeRotation(y: mesh.rotation[1], degrees: true)
+                * MakeRotation(z: mesh.rotation[2], degrees: true);
             return matScale * matRotate * matTranslate;
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        // Transforms a mesh in the object list. Requires the magnitude of the
+        // transform, which transform it is, the index into the list of the
+        // mesh, and which coordinate the transform is being applied to
+        private void TransformObject(float magnitude, string transformation, int index, int coordinate)
         {
-            // this.DoubleBuffered = true; // May not be needed since picturebox is already double buffered
+            if (index != -1)
+            {
+                switch (transformation)
+                {
+                    case "Translation":
+                        Meshes[index].translation[coordinate] = magnitude;
+                        break;
+                    case "Rotation":
+                        Meshes[index].rotation[coordinate] = magnitude;
+                        break;
+                    case "Scale":
+                        Meshes[index].scale[coordinate] = magnitude;
+                        break;
+                }
+            }
+
+        }
+
+        private void UpdateUpDowns()
+        {
+            if (ObjectList.SelectedIndex != -1)
+            {
+                int index = ObjectList.SelectedIndex;
+                switch (TransformationBox.Text)
+                {
+                    case "Translation":
+                        UpDownX.Value = (decimal)Meshes[index].translation[0];
+                        UpDownY.Value = (decimal)Meshes[index].translation[1];
+                        UpDownZ.Value = (decimal)Meshes[index].translation[2];
+                        break;
+                    case "Rotation":
+                        UpDownX.Value = (decimal)Meshes[index].rotation[0];
+                        UpDownY.Value = (decimal)Meshes[index].rotation[1];
+                        UpDownZ.Value = (decimal)Meshes[index].rotation[2];
+                        break;
+                    case "Scale":
+                        UpDownX.Value = (decimal)Meshes[index].scale[0];
+                        UpDownY.Value = (decimal)Meshes[index].scale[1];
+                        UpDownZ.Value = (decimal)Meshes[index].scale[2];
+                        break;
+                }
+            }
+        }
+
+        private bool IsKeyIllegal(Keys key)
+        {
+            if ((key > Keys.D9 | key < Keys.D0) & key != Keys.Back & key != Keys.Enter & key != Keys.Delete & key != Keys.OemMinus & key != Keys.OemPeriod)
+                return true;
+            else
+                return false;
+
+        }
+
+        // Called when the form loads
+        private void MainForm_Load(object sender, EventArgs e)
+        {
             Stopwatch.Start();
             // How often the tick event is run
             Clock.Interval = 20;
             Clock.Enabled = true;
             // Initialize the class and components pertaining to the main view
-            // into the world. Increasing pixel width and height improves performance
-            // at little at the cost of a lot of visual quality
+            // into the world. Increasing pixel width/height improves performance
+            // a little at the cost of a lot of visual quality
             MainView = new Viewport(ViewWindow.Width, ViewWindow.Height, 1, 1);
             // Setup Projection Matrix
-            MainView.ProjMat = Matrix_MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
+            MainView.ProjMat = MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
         }
 
+        // Called each time the clock passes the time interval
         private void Clock_Tick(object sender, EventArgs e)
         {
             Tock = (float)Stopwatch.Elapsed.TotalSeconds;
@@ -1287,19 +1221,25 @@ namespace _3DModeler
         private void Viewer_Paint(object sender, PaintEventArgs e)
         {
             float speed = CameraSpeedSlider.Value;
-            // Will be replaced with always moving upwards (no matter camera orientation) later
-            if (KeyPressed[Keys.O])
-                MainView.CameraPosition.y += speed * ElapsedTime; // Travel along positive y-axis
-            // Will be replaced with always moving downwards
-            if (KeyPressed[Keys.L])
-                MainView.CameraPosition.y -= speed * ElapsedTime; // Travel along negative y-axis
 
-            // Will be replaced with always moving leftwards
+            if (KeyPressed[Keys.O])
+                // Travel along positive y-axis
+                // Will be replaced with always moving upwards (no matter camera orientation) later
+                MainView.CameraPosition.y += speed * ElapsedTime;
+            if (KeyPressed[Keys.L])
+                // Travel along negative y-axis
+                // Will be replaced with always moving downwards
+                MainView.CameraPosition.y -= speed * ElapsedTime;
+
             if (KeyPressed[Keys.K])
-                MainView.CameraPosition.x -= speed * ElapsedTime; // Travel along negative x-axis
-            // Will be replaced with always moving rightwards
+                // Travel along positive x-axis
+                // Will be replaced with always moving rightwards
+                MainView.CameraPosition.x += speed * ElapsedTime;
             if (KeyPressed[Keys.OemSemicolon])
-                MainView.CameraPosition.x += speed * ElapsedTime; // Travel along positive x-axis
+                // Travel along negative x-axis
+                // Will be replaced with always moving leftwards
+                MainView.CameraPosition.x -= speed * ElapsedTime;
+
 
             // A velocity vector used to control the forward movement of the camera
             Vec3D Velocity = MainView.LookDirection * (speed * ElapsedTime);
@@ -1325,42 +1265,37 @@ namespace _3DModeler
                 MainView.Pitch += 2.0f * ElapsedTime;
 
 
-            // Set up "World Transform"
-            Mat4x4 worldMat = Matrix_MakeIdentity();
-
-            // Rotates the world
-            Mat4x4 worldMatRotX = Matrix_MakeRotationX(MainView.ThetaX);
-            Mat4x4 worldMatRotY = Matrix_MakeRotationY(MainView.ThetaY);
-            Mat4x4 worldMatRotZ = Matrix_MakeRotationZ(MainView.ThetaZ);
-
-            // Scales the world
-            Mat4x4 worldMatScale = Matrix_MakeScale(1, 1, 1);
-
-            // Offsets the world
-            Mat4x4 worldMatTrans = Matrix_MakeTranslation(0.0f, 0.0f, 0.0f);
+            // Set up "World Transform". These transformations only affect the
+            // way in which the models are seen in the program. They do not
+            // permanently change the meshes
+            Mat4x4 worldMat = MakeIdentity();
+            Mat4x4 worldRotMat = MakeRotation(MainView.Thetas[0], MainView.Thetas[1], MainView.Thetas[2]); // Rotates the world
+            Mat4x4 worldScaleMat = MakeScale(1, 1, 1); // Scales the world
+            Mat4x4 worldTransMat = MakeTranslation(0.0f, 0.0f, 0.0f);  // Offsets the world
 
             // Apply transformations in correct order
-            worldMat *= worldMatScale; // Transform by scaling
-            worldMat *= worldMatRotX * worldMatRotY * worldMatRotZ; // Transform by rotation
-            worldMat *= worldMatTrans; // Transform by translation
+            worldMat *= worldScaleMat; // Transform by scaling
+            worldMat *= worldRotMat; // Transform by rotation
+            worldMat *= worldTransMat; // Transform by translation
 
             // Create "Point At" Matrix for camera
             Vec3D vUp = new Vec3D(0, 1, 0); // Default up direction for camera is along the positive y-axis
             Vec3D vForwardCam = new Vec3D(0, 0, 1); // Default forward direction for camera is along the positive z-axis
 
-            // TODO: Fix this. (gets choppy when looking directly up/down)
-            MainView.Pitch = MainView.Pitch > 0 ? MathF.Min(3.1415f / 2, MainView.Pitch) : MathF.Max(-3.1415f / 2, MainView.Pitch); // Cap pitch from being able to rotate too far.
-            Mat4x4 cameraMatRotX = Matrix_MakeRotationX(MainView.Pitch);
-            Mat4x4 cameraMatRotY = Matrix_MakeRotationY(MainView.Yaw);
+            // Cap pitch from being able to rotate too far.
+            // TODO: Fix apparent stutter when looking directly up/down
+            MainView.Pitch = Math.Clamp(MainView.Pitch, -3.1415f / 2, 3.1415f / 2);
+
+            Mat4x4 cameraRotMat = MakeRotation(MainView.Pitch, MainView.Yaw);
             // Rotated forward vector becomes the camera's look direction
-            MainView.LookDirection = vForwardCam * cameraMatRotX * cameraMatRotY;
+            MainView.LookDirection = vForwardCam * cameraRotMat;
             // Offset the look direction to the camera location to get the target the camera points at
             Vec3D vTarget = MainView.CameraPosition + MainView.LookDirection;
             // Construct the "Point At" matrix
-            Mat4x4 matCamera = Matrix_PointAt(ref MainView.CameraPosition, ref vTarget, ref vUp);
-
+            Mat4x4 matCamera = MakePointAt(ref MainView.CameraPosition, ref vTarget, ref vUp);
             // Construct the "Look At" matrix from the "Point At" matrix inverse
-            Mat4x4 matView = Matrix_QuickInverse(ref matCamera);
+            Mat4x4 viewMat = QuickInverse(ref matCamera);
+
 
             // Dispose of the previous frame
             MainView.Frame.Dispose();
@@ -1374,49 +1309,50 @@ namespace _3DModeler
                 MainView.DepthBuffer[i] = 0.0f;
             }
 
-
             // Draw each mesh
             for (int i = 0; i < Meshes.Count; i++)
             {
                 Mesh mesh = Meshes[i];
 
-                // Get Transformation Matrix
-                Mat4x4 matTransform = GetTransformationMatrix(mesh);
+                // Get triangle transformation matrix. Unlike the world transformation
+                // matrix, this matrix applies induvial transforms for each triangle 
+                Mat4x4 triMat = GetTriTransformationMatrix(mesh);
 
 
                 bool isSelected = false;
+                // Check whether the user selected this mesh or not
                 if (ObjectList.SelectedIndex == i)
                 {
                     isSelected = true;
                 }
                 // Store triangles for rasterization later
-                List<Triangle> vecTrianglesToRaster = new List<Triangle>();
+                List<Triangle> trianglesToRaster = new List<Triangle>();
 
                 // Prepare each triangle for drawing
                 foreach (Triangle tri in mesh.tris)
                 {
-                    MainView.PrepareForRasterization(worldMat, matView, matTransform, tri, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
+                    MainView.PrepareForRasterization(tri, worldMat, viewMat, triMat, trianglesToRaster, CullingToolStripMenuItem.Checked);
                 }
-                // Split each quad into two tris and prepare both tris for drawing.
+                // Split each quad into two tris and prepare each for drawing.
                 // To keep the quad from looking like two tris in wireframe mode, a
                 // hack to keep specific sides from being drawn is used
                 foreach (Quadrilateral quad in mesh.quads)
                 {
                     Triangle tri1 = new Triangle(quad.p[0], quad.p[1], quad.p[2], quad.t[0], quad.t[1], quad.t[2]);
                     tri1.drawSide2_0 = false;
-                    MainView.PrepareForRasterization(worldMat, matView, matTransform, tri1, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
+                    MainView.PrepareForRasterization(tri1, worldMat, viewMat, triMat, trianglesToRaster, CullingToolStripMenuItem.Checked);
                     Triangle tri2 = new Triangle(quad.p[0], quad.p[2], quad.p[3], quad.t[0], quad.t[2], quad.t[3]);
                     tri2.drawSide0_1 = false;
-                    MainView.PrepareForRasterization(worldMat, matView, matTransform, tri2, ref vecTrianglesToRaster, CullingToolStripMenuItem.Checked);
+                    MainView.PrepareForRasterization(tri2, worldMat, viewMat, triMat, trianglesToRaster, CullingToolStripMenuItem.Checked);
                 }
 
                 // Sort triangles from back to front through approximating
                 // the triangles' z positions. Useful for transparency. Currently
-                // used as a hack to prevent wireframe being seen through solid objects
-                // (Does not currently work if there are multiple meshes)
+                // used as a hack to prevent wireframe from being seen through solid
+                // objects (Does not currently work if there are multiple meshes)
                 if (SolidToolStripMenuItem.Checked & WireframeToolStripMenuItem.Checked)
                 {
-                    vecTrianglesToRaster.Sort((Triangle t1, Triangle t2) =>
+                    trianglesToRaster.Sort((Triangle t1, Triangle t2) =>
                     {
                         float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
                         float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
@@ -1436,7 +1372,7 @@ namespace _3DModeler
                 }
 
                 // Loop through all transformed, viewed, projected, and sorted triangles
-                foreach (Triangle triToRaster in vecTrianglesToRaster)
+                foreach (Triangle triToRaster in trianglesToRaster)
                 {
                     // Clip triangles against all four screen edges, this could yield
                     // a bunch of triangles, so create a queue that we traverse to 
@@ -1447,6 +1383,7 @@ namespace _3DModeler
                     listTriangles.Enqueue(triToRaster);
                     int nNewTriangles = 1;
 
+                    // For each plane...
                     for (int p = 0; p < 4; p++)
                     {
                         int nTrisToAdd = 0;
@@ -1525,16 +1462,17 @@ namespace _3DModeler
         }
 
         // Sets the current state of any pressed key
-        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
             KeyPressed[e.KeyCode] = true;
         }
 
-        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        private void MainForm_KeyUp(object sender, KeyEventArgs e)
         {
             KeyPressed[e.KeyCode] = false;
         }
 
+        // Sets the current state of the mouse
         private void Viewer_MouseDown(object sender, MouseEventArgs e)
         {
             LastCursorPosition = Cursor.Position;
@@ -1552,22 +1490,22 @@ namespace _3DModeler
             {
                 // Basic cursor controls are implemented however the camera's orientation
                 // is not taken into account yet 
-                MainView.ThetaY -= (Cursor.Position.X - LastCursorPosition.X) * 0.005f;
-                MainView.ThetaX -= (Cursor.Position.Y - LastCursorPosition.Y) * 0.005f;
+                MainView.Thetas[1] -= (Cursor.Position.X - LastCursorPosition.X) * 0.005f;
+                MainView.Thetas[0] -= (Cursor.Position.Y - LastCursorPosition.Y) * 0.005f;
                 LastCursorPosition = Cursor.Position;
             }
         }
 
-        private void Form1_SizeChanged(object sender, EventArgs e)
+        private void MainForm_SizeChanged(object sender, EventArgs e)
         {
             // Updates the viewport with the form
             MainView.ScreenWidth = ViewWindow.Width / MainView.PixelWidth;
             MainView.ScreenHeight = ViewWindow.Height / MainView.PixelHeight;
             MainView.DepthBuffer = new float[MainView.ScreenWidth * MainView.ScreenHeight];
-            MainView.ProjMat = Matrix_MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
+            MainView.ProjMat = MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
         }
 
-        // Basic implementation of opining obj files. Not fully complete
+        // Opens obj files
         private void OpenToolStripMenuItem_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
@@ -1586,15 +1524,18 @@ namespace _3DModeler
                     string filePath = openFileDialog.FileName;
                     string folderPath = Path.GetDirectoryName(filePath);
                     string materialName = "";
+                    // If the obj file was read successfully...
                     if (LoadObjectsFromFile(filePath, ref materialName))
                     {
+                        // If the obj file references a material file... 
                         if (materialName != "")
                         {
                             string materialPath = Path.Combine(folderPath, materialName);
                             Dictionary<string, Material> materialMap = new Dictionary<string, Material>();
+                            // If the mtl file was read successfully...
                             if (LoadMaterialsFromFile(materialPath, folderPath, materialMap))
                             {
-                                // For each mesh, we find and link its material template
+                                // For each mesh, we find and link to it its material template
                                 // from the mtl file. Otherwise, it will have a default
                                 // material template
                                 for (int i = 0; i < Meshes.Count; i++)
@@ -1621,217 +1562,224 @@ namespace _3DModeler
             }
         }
 
-        // Basic obj file saving. Only saves vertex and face information atm
+        // Obj file saving
         private void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // Can't save anything if there are no meshes
             if (Meshes.Count != 0)
             {
-                // Initialize SaveFileDialog
-                SaveFileDialog saveFileDialog1 = new SaveFileDialog();
-                saveFileDialog1.Filter = "obj files (*.obj)|*.obj";
-                saveFileDialog1.FilterIndex = 2;
-                saveFileDialog1.RestoreDirectory = false;
-
-                // If a valid filename was chosen...
-                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+                using (SaveFileDialog saveFileDialog = new SaveFileDialog())
                 {
-                    // Initialize various path names
-                    string directoryPath = Path.GetDirectoryName(saveFileDialog1.FileName);
-                    string chosenName = Path.GetFileNameWithoutExtension(saveFileDialog1.FileName);
-                    string objPath = saveFileDialog1.FileName;
-                    string mtlPath = Path.Combine(directoryPath, chosenName + ".mtl");
+                    // Setup OpenFileDialog properties
+                    saveFileDialog.Filter = "obj files (*.obj)|*.obj";
+                    saveFileDialog.FilterIndex = 2;
+                    saveFileDialog.RestoreDirectory = false;
 
-                    // Write the obj file
-                    using (StreamWriter outputFile = new StreamWriter(objPath))
+                    // If a valid filename was chosen...
+                    if (saveFileDialog.ShowDialog() == DialogResult.OK)
                     {
-                        // Specify mtl file
-                        outputFile.WriteLine($"mtllib {chosenName}.mtl");
-                        // Pool of vertices start with an index of 1
-                        int vertIndex = 1;
-                        int texIndex = 1;
-                        foreach (Mesh mesh in Meshes)
+                        // Initialize various path names
+                        string objPath = saveFileDialog.FileName;
+                        string directoryPath = Path.GetDirectoryName(objPath);
+                        string chosenName = Path.GetFileNameWithoutExtension(objPath);
+                        string mtlPath = Path.Combine(directoryPath, chosenName + ".mtl");
+
+                        // Write the obj file
+                        using (StreamWriter outputFile = new StreamWriter(objPath))
                         {
-                            // Apply transformations
-                            Mat4x4 transform = GetTransformationMatrix(mesh);
-
-                            // As we loop through each polygon, we store each vertex and
-                            // its index into the pool
-                            Dictionary<Vec3D, int> indexOfVertex = new Dictionary<Vec3D, int>();
-                            Dictionary<Vec2D, int> indexOfTexel = new Dictionary<Vec2D, int>();
-                            // We also must keep track of the indices of vertices that
-                            // correspond to each face
-                            List<int[]> vertFaces = new List<int[]>();
-                            List<int[]> texFaces = new List<int[]>();
-                            // Specify new object group
-                            outputFile.WriteLine($"o {mesh.name}");
-
-                            foreach (Triangle tri in mesh.tris)
+                            // Specify mtl file
+                            outputFile.WriteLine($"mtllib {chosenName}.mtl");
+                            // Pool of vertices start with an index of 1
+                            int vertIndex = 1;
+                            int texIndex = 1;
+                            foreach (Mesh mesh in Meshes)
                             {
-                                // We Keep track of each index for each vertex of each face
-                                int[] vertFace = new int[3];
-                                int[] texFace = new int[3];
-                                // For each vertex in the triangle...
-                                for (int i = 0; i < 3; i++)
+                                // Get matrix to transform each vertex in the mesh
+                                // according to the transformations of that mesh
+                                Mat4x4 transform = GetTriTransformationMatrix(mesh);
+
+                                // As we loop through each polygon, we store each vertex and
+                                // its index into the pool
+                                Dictionary<Vec3D, int> indexOfVertex = new Dictionary<Vec3D, int>();
+                                Dictionary<Vec2D, int> indexOfTexel = new Dictionary<Vec2D, int>();
+                                // We also must keep track of the indices of vertices that
+                                // correspond to each face
+                                List<int[]> vertFaces = new List<int[]>();
+                                List<int[]> texFaces = new List<int[]>();
+                                // Specify new object group
+                                outputFile.WriteLine($"o {mesh.name}");
+
+                                foreach (Triangle tri in mesh.tris)
                                 {
-                                    // Check whether that vertex is already in our pool of
-                                    // vertices
-                                    if (indexOfVertex.ContainsKey(tri.p[i] * transform))
+                                    // We Keep track of each index for each vertex of each face
+                                    int[] vertFace = new int[3];
+                                    int[] texFace = new int[3];
+                                    // For each vertex in the triangle...
+                                    for (int i = 0; i < 3; i++)
                                     {
-                                        // If it already exits in the pool, we get the index
-                                        // of that vertex and link it to the face
-                                        vertFace[i] = indexOfVertex[tri.p[i] * transform];
+                                        // Apply Transformations
+                                        Vec3D transformedPoint = tri.p[i] * transform;
+                                        // Check whether that vertex is already in our pool of
+                                        // vertices
+                                        if (indexOfVertex.ContainsKey(transformedPoint))
+                                        {
+                                            // If it already exits in the pool, we get the index
+                                            // of that vertex and link it to the face
+                                            vertFace[i] = indexOfVertex[transformedPoint];
+                                        }
+                                        else
+                                        {
+                                            // If we don't already have that vertex stored, then
+                                            // we store it and its index
+                                            indexOfVertex[transformedPoint] = vertIndex;
+                                            // We link that index to the face and we
+                                            // increment the index for the next new vertex
+                                            vertFace[i] = vertIndex++;
+                                        }
+                                        // Same goes for the texel coordinates
+                                        if (indexOfTexel.ContainsKey(tri.t[i]))
+                                        {
+                                            texFace[i] = indexOfTexel[tri.t[i]];
+                                        }
+                                        else
+                                        {
+                                            indexOfTexel[tri.t[i]] = texIndex;
+                                            texFace[i] = texIndex++;
+                                        }
                                     }
-                                    else
-                                    {
-                                        // If we don't already have that vertex stored, then
-                                        // we store it and its index
-                                        indexOfVertex[tri.p[i] * transform] = vertIndex;
-                                        // We link that index to the face and we
-                                        // increment the index for the next new vertex
-                                        vertFace[i] = vertIndex++;
-                                    }
-                                    // Same goes for the texel coordinates
-                                    if (indexOfTexel.ContainsKey(tri.t[i]))
-                                    {
-                                        texFace[i] = indexOfTexel[tri.t[i]];
-                                    }
-                                    else
-                                    {
-                                        indexOfTexel[tri.t[i]] = texIndex;
-                                        texFace[i] = texIndex++;
-                                    }
+                                    // Add each index array to our list of index arrays
+                                    vertFaces.Add(vertFace);
+                                    texFaces.Add(texFace);
                                 }
-                                // Add each index array to our list of index arrays
-                                vertFaces.Add(vertFace);
-                                texFaces.Add(texFace);
-                            }
-                            // We repeat the above code for each quadrilateral
-                            foreach (Quadrilateral quad in mesh.quads)
-                            {
-                                int[] vertFace = new int[4];
-                                int[] texFace = new int[4];
-
-                                for (int i = 0; i < 4; i++)
+                                // We repeat the above code for each quadrilateral
+                                foreach (Quadrilateral quad in mesh.quads)
                                 {
-                                    if (indexOfVertex.ContainsKey(quad.p[i] * transform))
+                                    int[] vertFace = new int[4];
+                                    int[] texFace = new int[4];
+
+                                    for (int i = 0; i < 4; i++)
                                     {
-                                        vertFace[i] = indexOfVertex[quad.p[i] * transform];
+                                        Vec3D transformedPoint = quad.p[i] * transform;
+                                        if (indexOfVertex.ContainsKey(transformedPoint))
+                                        {
+                                            vertFace[i] = indexOfVertex[transformedPoint];
+                                        }
+                                        else
+                                        {
+                                            indexOfVertex[transformedPoint] = vertIndex;
+                                            vertFace[i] = vertIndex++;
+                                        }
+                                        if (indexOfTexel.ContainsKey(quad.t[i]))
+                                        {
+                                            texFace[i] = indexOfTexel[quad.t[i]];
+                                        }
+                                        else
+                                        {
+                                            indexOfTexel[quad.t[i]] = texIndex;
+                                            texFace[i] = texIndex++;
+                                        }
                                     }
-                                    else
-                                    {
-                                        indexOfVertex[quad.p[i] * transform] = vertIndex;
-                                        vertFace[i] = vertIndex++;
-                                    }
-                                    if (indexOfTexel.ContainsKey(quad.t[i]))
-                                    {
-                                        texFace[i] = indexOfTexel[quad.t[i]];
-                                    }
-                                    else
-                                    {
-                                        indexOfTexel[quad.t[i]] = texIndex;
-                                        texFace[i] = texIndex++;
-                                    }
+                                    vertFaces.Add(vertFace);
+                                    texFaces.Add(texFace);
                                 }
-                                vertFaces.Add(vertFace);
-                                texFaces.Add(texFace);
-                            }
 
-                            // Output the collection in standard obj format
-                            foreach (KeyValuePair<Vec3D, int> vertex in indexOfVertex)
-                            {
-                                // Explicitly set 6 decimal places
-                                string line = $"v {vertex.Key.x:f6} {vertex.Key.y:f6} {vertex.Key.z:f6}";
-                                outputFile.WriteLine(line);
-                            }
-                            if (mesh.material.hasTexture)
-                            {
-                                foreach (KeyValuePair<Vec2D, int> texel in indexOfTexel)
+                                // Output the collection in standard obj format
+                                foreach (KeyValuePair<Vec3D, int> vertex in indexOfVertex)
                                 {
-                                    string line = $"vt {texel.Key.u:f6} {texel.Key.v:f6}";
+                                    // Explicitly set 6 decimal places
+                                    string line = $"v {vertex.Key.x:f6} {vertex.Key.y:f6} {vertex.Key.z:f6}";
                                     outputFile.WriteLine(line);
                                 }
-                            }
-                            // Specify the material name
-                            outputFile.WriteLine($"usemtl {mesh.materialName}");
-
-                            // Output the collection in standard obj format
-                            if (mesh.material.hasTexture)
-                            {
-                                for (int i = 0; i < vertFaces.Count; i++)
+                                if (mesh.material.hasTexture)
                                 {
-                                    if (vertFaces[i].Length == 3)
+                                    foreach (KeyValuePair<Vec2D, int> texel in indexOfTexel)
                                     {
-                                        string line = $"f {vertFaces[i][0]}/{texFaces[i][0]} {vertFaces[i][1]}/{texFaces[i][1]} " +
-                                            $"{vertFaces[i][2]}/{texFaces[i][2]}";
-                                        outputFile.WriteLine(line);
-
-                                    }
-                                    else if (vertFaces[i].Length == 4)
-                                    {
-                                        string line = $"f {vertFaces[i][0]}/{texFaces[i][0]} {vertFaces[i][1]}/{texFaces[i][1]} " +
-                                            $"{vertFaces[i][2]}/{texFaces[i][2]} {vertFaces[i][3]}/{texFaces[i][3]}";
+                                        string line = $"vt {texel.Key.u:f6} {texel.Key.v:f6}";
                                         outputFile.WriteLine(line);
                                     }
                                 }
-                            }
-                            else
-                            {
-                                foreach (int[] face in vertFaces)
-                                {
-                                    if (face.Length == 3)
-                                    {
-                                        string line = $"f {face[0]} {face[1]} {face[2]}";
-                                        outputFile.WriteLine(line);
+                                // Specify the material name
+                                outputFile.WriteLine($"usemtl {mesh.materialName}");
 
-                                    }
-                                    else if (face.Length == 4)
+                                // Output the collection in standard obj format
+                                if (mesh.material.hasTexture)
+                                {
+                                    for (int i = 0; i < vertFaces.Count; i++)
                                     {
-                                        string line = $"f {face[0]} {face[1]} {face[2]} {face[3]}";
-                                        outputFile.WriteLine(line);
+                                        if (vertFaces[i].Length == 3)
+                                        {
+                                            string line = $"f {vertFaces[i][0]}/{texFaces[i][0]} {vertFaces[i][1]}/{texFaces[i][1]} " +
+                                                $"{vertFaces[i][2]}/{texFaces[i][2]}";
+                                            outputFile.WriteLine(line);
+
+                                        }
+                                        else if (vertFaces[i].Length == 4)
+                                        {
+                                            string line = $"f {vertFaces[i][0]}/{texFaces[i][0]} {vertFaces[i][1]}/{texFaces[i][1]} " +
+                                                $"{vertFaces[i][2]}/{texFaces[i][2]} {vertFaces[i][3]}/{texFaces[i][3]}";
+                                            outputFile.WriteLine(line);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (int[] face in vertFaces)
+                                    {
+                                        if (face.Length == 3)
+                                        {
+                                            string line = $"f {face[0]} {face[1]} {face[2]}";
+                                            outputFile.WriteLine(line);
+
+                                        }
+                                        else if (face.Length == 4)
+                                        {
+                                            string line = $"f {face[0]} {face[1]} {face[2]} {face[3]}";
+                                            outputFile.WriteLine(line);
+                                        }
                                     }
                                 }
                             }
+
                         }
 
-                    }
-
-                    // Write the material file
-                    using (StreamWriter outputFile = new StreamWriter(mtlPath))
-                    {
-                        HashSet<string> materialTemplates = new HashSet<string>();
-                        foreach (Mesh mesh in Meshes)
+                        // Writes the material file
+                        using (StreamWriter outputFile = new StreamWriter(mtlPath))
                         {
                             // Prevents duplicate material templates from being written
-                            if (materialTemplates.Contains(mesh.materialName))
-                                continue;
-                            outputFile.WriteLine();
-                            outputFile.WriteLine($"newmtl {mesh.materialName}");
-                            outputFile.WriteLine($"Ns {mesh.material.Ns:f6}");
-                            outputFile.WriteLine($"Ka {mesh.material.Ka[0]:f6} {mesh.material.Ka[1]:f6} {mesh.material.Ka[2]:f6}");
-                            outputFile.WriteLine($"Ks {mesh.material.Ks[0]:f6} {mesh.material.Ks[1]:f6} {mesh.material.Ks[2]:f6}");
-                            outputFile.WriteLine($"Ke {mesh.material.Ke[0]:f6} {mesh.material.Ke[1]:f6} {mesh.material.Ke[2]:f6}");
-                            outputFile.WriteLine($"Ni {mesh.material.Ni:f6}");
-                            outputFile.WriteLine($"d {mesh.material.d:f6}");
-                            outputFile.WriteLine($"illum {mesh.material.illum}");
-                            if (mesh.material.hasTexture)
+                            HashSet<string> materialTemplates = new HashSet<string>();
+                            foreach (Mesh mesh in Meshes)
                             {
-                                outputFile.WriteLine($"map_Kd {mesh.material.texturePath}");
-                                string texturePath = Path.Combine(directoryPath, mesh.material.texturePath);
-                                // If the texture does not exist, we save it along side the obj and mtl files
-                                if (!File.Exists(texturePath))
+                                if (materialTemplates.Contains(mesh.materialName))
+                                    continue;
+                                outputFile.WriteLine();
+                                outputFile.WriteLine($"newmtl {mesh.materialName}");
+                                outputFile.WriteLine($"Ns {mesh.material.ns:f6}");
+                                outputFile.WriteLine($"Ka {mesh.material.ka[0]:f6} {mesh.material.ka[1]:f6} {mesh.material.ka[2]:f6}");
+                                outputFile.WriteLine($"Ks {mesh.material.ks[0]:f6} {mesh.material.ks[1]:f6} {mesh.material.ks[2]:f6}");
+                                outputFile.WriteLine($"Ke {mesh.material.ke[0]:f6} {mesh.material.ke[1]:f6} {mesh.material.ke[2]:f6}");
+                                outputFile.WriteLine($"Ni {mesh.material.ni:f6}");
+                                outputFile.WriteLine($"d {mesh.material.d:f6}");
+                                outputFile.WriteLine($"illum {mesh.material.illum}");
+                                if (mesh.material.hasTexture)
                                 {
-                                    texturePath = Path.Combine(directoryPath, mesh.material.texturePath);
-                                    mesh.material.texture.Bitmap.Save(texturePath);
+                                    outputFile.WriteLine($"map_Kd {mesh.material.texturePath}");
+                                    string texturePath = Path.Combine(directoryPath, mesh.material.texturePath);
+                                    // If the texture does not exist, we save it along side the obj and mtl files
+                                    if (!File.Exists(texturePath))
+                                    {
+                                        texturePath = Path.Combine(directoryPath, mesh.material.texturePath);
+                                        mesh.material.texture.Bitmap.Save(texturePath);
+                                    }
                                 }
+                                materialTemplates.Add(mesh.materialName);
                             }
-                            materialTemplates.Add(mesh.materialName);
+
                         }
 
+                        MessageBox.Show("Save complete");
                     }
-
-                    MessageBox.Show("Save complete");
                 }
+
             }
             else
             {
@@ -1839,25 +1787,25 @@ namespace _3DModeler
             }
         }
 
+        // Creates a cube and adds it to the world
         private void CubeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Mesh cube = new Mesh();
-            List<Quadrilateral> quads = new List<Quadrilateral>
+            cube.quads = new List<Quadrilateral>
             {
-                // North
+                // North Face
                 new Quadrilateral(new Vec3D(1,0,1), new Vec3D(1,1,1), new Vec3D(0,1,1), new Vec3D(0,0,1)),
-                // South
+                // South Face
                 new Quadrilateral(new Vec3D(0,0,0), new Vec3D(0,1,0), new Vec3D(1,1,0), new Vec3D(1,0,0)),
-                // East
+                // East Face
                 new Quadrilateral(new Vec3D(1,0,0), new Vec3D(1,1,0), new Vec3D(1,1,1), new Vec3D(1,0,1)),
-                // West
+                // West Face
                 new Quadrilateral(new Vec3D(0,0,1), new Vec3D(0,1,1), new Vec3D(0,1,0), new Vec3D(0,0,0)),
-                // Top
+                // Top Face
                 new Quadrilateral(new Vec3D(0,1,0), new Vec3D(0,1,1), new Vec3D(1,1,1), new Vec3D(1,1,0)),
-                // Bottom
+                // Bottom Face
                 new Quadrilateral(new Vec3D(0,0,1), new Vec3D(0,0,0), new Vec3D(1,0,0), new Vec3D(1,0,1)),
             };
-            cube.quads = quads;
             cube.name = "Cube" + Meshes.Count;
             cube.materialName = "Cube" + Meshes.Count;
             Meshes.Add(cube);
@@ -1886,24 +1834,18 @@ namespace _3DModeler
             CameraSpeedSlider.Value = (int)CamSpeedUpDown.Value;
         }
 
-        // Whenever the numericUpDown is in focus, pressing keys cause
-        // an error 'ding' to play. This prevents that from happening
-        private void CamSpeedUpDown_KeyDown(object sender, KeyEventArgs e)
+        private void MainForm_Click(object sender, EventArgs e)
         {
-            if ((e.KeyCode > Keys.D9 | e.KeyCode < Keys.D0) & e.KeyCode != Keys.Back & e.KeyCode != Keys.Enter & e.KeyCode != Keys.Delete)
-            {
-                e.SuppressKeyPress = true;
-            }
-        }
-
-        private void Form1_Click(object sender, EventArgs e)
-        {
+            // Allows user to deselect objects by clicking on the form
             ObjectList.ClearSelected();
+            ActiveControl = null;
         }
 
         private void ViewWindow_Click(object sender, EventArgs e)
         {
+            // Allows user to deselect objects by clicking on the picturebox
             ObjectList.ClearSelected();
+            ActiveControl = null;
         }
 
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1913,115 +1855,54 @@ namespace _3DModeler
             ObjectList.Items.RemoveAt(index);
         }
 
-
         private void ObjectList_MouseUp(object sender, MouseEventArgs e)
         {
+            // If a user right clicked on an object, show the context menu
             if (e.Button == MouseButtons.Right & ObjectList.SelectedIndex != -1)
             {
                 ContextMenuStrip.Show(Cursor.Position);
             }
         }
 
-        // Note change to enum maybe
-        private void Transform(int value, int index, string transformation, int coordinate)
-        {
-            switch (transformation)
-            {
-                case "Translation":
-                    Meshes[index].Translation[coordinate] = value;
-                    break;
-                case "Rotation":
-                    Meshes[index].Rotation[coordinate] = value;
-                    break;
-                case "Scale":
-                    Meshes[index].Scale[coordinate] = value;
-                    break;
-            }
-        }
-
         private void UpDownX_ValueChanged(object sender, EventArgs e)
         {
-
-            if (ObjectList.SelectedIndex != -1)
-            {
-                int index = ObjectList.SelectedIndex;
-                Transform((int)UpDownX.Value, ObjectList.SelectedIndex, TransformationBox.Text, 0);
-            }
+            TransformObject((float)UpDownX.Value, TransformationBox.Text, ObjectList.SelectedIndex, 0);
         }
 
         private void UpDownY_ValueChanged(object sender, EventArgs e)
         {
-            if (ObjectList.SelectedIndex != -1)
-            {
-                int index = ObjectList.SelectedIndex;
-                Transform((int)UpDownY.Value, ObjectList.SelectedIndex, TransformationBox.Text, 1);
-            }
+            TransformObject((float)UpDownY.Value, TransformationBox.Text, ObjectList.SelectedIndex, 1);
         }
 
         private void UpDownZ_ValueChanged(object sender, EventArgs e)
         {
-            if (ObjectList.SelectedIndex != -1)
-            {
-                int index = ObjectList.SelectedIndex;
-                Transform((int)UpDownZ.Value, ObjectList.SelectedIndex, TransformationBox.Text, 2);
-            }
+            TransformObject((float)UpDownZ.Value, TransformationBox.Text, ObjectList.SelectedIndex, 2);
         }
 
         private void ObjectList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (ObjectList.SelectedIndex != -1)
-            {
-                int index = ObjectList.SelectedIndex;
-                switch (TransformationBox.Text)
-                {
-                    case "Translation":
-                        UpDownX.Value = Meshes[index].Translation[0];
-                        UpDownY.Value = Meshes[index].Translation[1];
-                        UpDownZ.Value = Meshes[index].Translation[2];
-                        break;
-                    case "Rotation":
-                        UpDownX.Value = Meshes[index].Rotation[0];
-                        UpDownY.Value = Meshes[index].Rotation[1];
-                        UpDownZ.Value = Meshes[index].Rotation[2];
-                        break;
-                    case "Scale":
-                        UpDownX.Value = Meshes[index].Scale[0];
-                        UpDownY.Value = Meshes[index].Scale[1];
-                        UpDownZ.Value = Meshes[index].Scale[2];
-                        break;
-                }
-            }
+            UpdateUpDowns();
         }
 
         private void TransformationBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (ObjectList.SelectedIndex != -1)
+            UpdateUpDowns();
+        }
+
+        // When certain form elements are in focus, pressing certain keys causes
+        // an error 'ding' to play. This prevents that from happening.
+        // Alternatively, the user could also just have clicked off the element
+        private void CamSpeedUpDown_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (IsKeyIllegal(e.KeyCode))
             {
-                int index = ObjectList.SelectedIndex;
-                switch (TransformationBox.Text)
-                {
-                    case "Translation":
-                        UpDownX.Value = Meshes[index].Translation[0];
-                        UpDownY.Value = Meshes[index].Translation[1];
-                        UpDownZ.Value = Meshes[index].Translation[2];
-                        break;
-                    case "Rotation":
-                        UpDownX.Value = Meshes[index].Rotation[0];
-                        UpDownY.Value = Meshes[index].Rotation[1];
-                        UpDownZ.Value = Meshes[index].Rotation[2];
-                        break;
-                    case "Scale":
-                        UpDownX.Value = Meshes[index].Scale[0];
-                        UpDownY.Value = Meshes[index].Scale[1];
-                        UpDownZ.Value = Meshes[index].Scale[2];
-                        break;
-                }
+                e.SuppressKeyPress = true;
             }
         }
 
         private void UpDownX_KeyDown(object sender, KeyEventArgs e)
         {
-            if ((e.KeyCode > Keys.D9 | e.KeyCode < Keys.D0) & e.KeyCode != Keys.Back & e.KeyCode != Keys.Enter & e.KeyCode != Keys.Delete & e.KeyCode != Keys.OemMinus)
+            if (IsKeyIllegal(e.KeyCode))
             {
                 e.SuppressKeyPress = true;
             }
@@ -2029,7 +1910,7 @@ namespace _3DModeler
 
         private void UpDownY_KeyDown(object sender, KeyEventArgs e)
         {
-            if ((e.KeyCode > Keys.D9 | e.KeyCode < Keys.D0) & e.KeyCode != Keys.Back & e.KeyCode != Keys.Enter & e.KeyCode != Keys.Delete & e.KeyCode != Keys.OemMinus)
+            if (IsKeyIllegal(e.KeyCode))
             {
                 e.SuppressKeyPress = true;
             }
@@ -2037,7 +1918,7 @@ namespace _3DModeler
 
         private void UpDownZ_KeyDown(object sender, KeyEventArgs e)
         {
-            if ((e.KeyCode > Keys.D9 | e.KeyCode < Keys.D0) & e.KeyCode != Keys.Back & e.KeyCode != Keys.Enter & e.KeyCode != Keys.Delete & e.KeyCode != Keys.OemMinus)
+            if (IsKeyIllegal(e.KeyCode))
             {
                 e.SuppressKeyPress = true;
             }

@@ -1,6 +1,6 @@
 ﻿namespace _3DModeler
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         ///  Required designer variable.
@@ -320,6 +320,7 @@
             // UpDownX
             // 
             UpDownX.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            UpDownX.DecimalPlaces = 4;
             UpDownX.Location = new Point(143, 569);
             UpDownX.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             UpDownX.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
@@ -332,6 +333,7 @@
             // UpDownY
             // 
             UpDownY.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            UpDownY.DecimalPlaces = 4;
             UpDownY.Location = new Point(143, 614);
             UpDownY.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             UpDownY.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
@@ -344,6 +346,7 @@
             // UpDownZ
             // 
             UpDownZ.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            UpDownZ.DecimalPlaces = 4;
             UpDownZ.Location = new Point(143, 659);
             UpDownZ.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             UpDownZ.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
@@ -362,7 +365,7 @@
             LabelObjectList.TabIndex = 20;
             LabelObjectList.Text = "Object List:";
             // 
-            // Form1
+            // MainForm
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -386,13 +389,13 @@
             KeyPreview = true;
             MainMenuStrip = MenuStrip;
             MinimumSize = new Size(1000, 600);
-            Name = "Form1";
+            Name = "MainForm";
             Text = "3DModeler";
-            Load += Form1_Load;
-            SizeChanged += Form1_SizeChanged;
-            Click += Form1_Click;
-            KeyDown += Form1_KeyDown;
-            KeyUp += Form1_KeyUp;
+            Load += MainForm_Load;
+            SizeChanged += MainForm_SizeChanged;
+            Click += MainForm_Click;
+            KeyDown += MainForm_KeyDown;
+            KeyUp += MainForm_KeyUp;
             ((System.ComponentModel.ISupportInitialize)ViewWindow).EndInit();
             MenuStrip.ResumeLayout(false);
             MenuStrip.PerformLayout();

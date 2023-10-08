@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
+﻿using static System.MathF;
 
 
 namespace _3DModeler
@@ -165,7 +160,8 @@ namespace _3DModeler
             public float[,] m = new float[4, 4];
         }
 
-        public static Mat4x4 Matrix_MakeIdentity()
+        // Returns an identity matrix
+        public static Mat4x4 MakeIdentity()
         {
             Mat4x4 matrix = new Mat4x4();
             matrix.m[0,0] = 1.0f;
@@ -175,120 +171,60 @@ namespace _3DModeler
             return matrix;
         }
 
-        // A rotation clockwise when looking along the positive axis
-        public static Mat4x4 Matrix_MakeRotationX(float fAngleRad)
+        // Returns a rotation matrix
+        public static Mat4x4 MakeRotation(float x = 0, float y = 0, float z = 0, bool degrees = false)
         {
             Mat4x4 matrix = new Mat4x4();
-            matrix.m[0,0] = 1.0f;
-            matrix.m[1,1] = MathF.Cos(fAngleRad);
-            matrix.m[1,2] = MathF.Sin(fAngleRad);
-            matrix.m[2,1] = -MathF.Sin(fAngleRad);
-            matrix.m[2,2] = MathF.Cos(fAngleRad);
-            matrix.m[3,3] = 1.0f;
-            return matrix;
-        }
-
-        public static Mat4x4 Matrix_MakeRotationXDegrees(float fAngleDeg)
-        {
-            Mat4x4 matrix = new Mat4x4();
-            float fAngleRad = fAngleDeg * MathF.PI / 180;
-            matrix.m[0, 0] = 1.0f;
-            matrix.m[1, 1] = MathF.Cos(fAngleRad);
-            matrix.m[1, 2] = MathF.Sin(fAngleRad);
-            matrix.m[2, 1] = -MathF.Sin(fAngleRad);
-            matrix.m[2, 2] = MathF.Cos(fAngleRad);
+            if (degrees)
+            {
+                x = x * PI / 180;
+                y = y * PI / 180;
+                z = z * PI / 180;
+            }
+            matrix.m[0, 0] = Cos(y) * Cos(z);
+            matrix.m[0, 1] = Cos(y) * Sin(z);
+            matrix.m[0, 2] = Sin(y);
+            matrix.m[0, 3] = 0;
+            matrix.m[1, 0] = -Sin(x) * Sin(y) * Cos(z) - Cos(x) * Sin(z);
+            matrix.m[1, 1] = Cos(x) * Cos(z) - Sin(x) * Sin(y) * Sin(z);
+            matrix.m[1, 2] = Sin(x) * Cos(y);
+            matrix.m[1, 3] = 0;
+            matrix.m[2, 0] = Sin(x) * Sin(z) - Cos(x) * Sin(y) * Cos(z);
+            matrix.m[2, 1] = -Sin(x) * Cos(z) - Cos(x) * Sin(y) * Sin(z);
+            matrix.m[2, 2] = Cos(x) * Cos(y);
+            matrix.m[2, 3] = 0;
+            matrix.m[3, 0] = 0;
+            matrix.m[3, 1] = 0;
+            matrix.m[3, 2] = 0;
             matrix.m[3, 3] = 1.0f;
             return matrix;
         }
 
-        public static Mat4x4 Matrix_MakeRotationY(float fAngleRad)
+        // Returns a translation matrix
+        public static Mat4x4 MakeTranslation(float x = 0, float y = 0, float z = 0)
         {
-            Mat4x4 matrix = new Mat4x4();
-            matrix.m[0,0] = MathF.Cos(fAngleRad);
-            matrix.m[0,2] = MathF.Sin(fAngleRad);
-            matrix.m[2,0] = -MathF.Sin(fAngleRad);
-            matrix.m[1,1] = 1.0f;
-            matrix.m[2,2] = MathF.Cos(fAngleRad);
-            matrix.m[3,3] = 1.0f;
-            return matrix;
-        }
-
-        public static Mat4x4 Matrix_MakeRotationYDegrees(float fAngleDeg)
-        {
-            Mat4x4 matrix = new Mat4x4();
-            float fAngleRad = fAngleDeg * MathF.PI / 180;
-            matrix.m[0, 0] = MathF.Cos(fAngleRad);
-            matrix.m[0, 2] = MathF.Sin(fAngleRad);
-            matrix.m[2, 0] = -MathF.Sin(fAngleRad);
-            matrix.m[1, 1] = 1.0f;
-            matrix.m[2, 2] = MathF.Cos(fAngleRad);
-            matrix.m[3, 3] = 1.0f;
-            return matrix;
-        }
-
-        public static Mat4x4 Matrix_MakeRotationZ(float fAngleRad)
-        {
-            Mat4x4 matrix = new Mat4x4();
-            matrix.m[0,0] = MathF.Cos(fAngleRad);
-            matrix.m[0,1] = MathF.Sin(fAngleRad);
-            matrix.m[1,0] = -MathF.Sin(fAngleRad);
-            matrix.m[1,1] = MathF.Cos(fAngleRad);
-            matrix.m[2,2] = 1.0f;
-            matrix.m[3,3] = 1.0f;
-            return matrix;
-        }
-
-        public static Mat4x4 Matrix_MakeRotationZDegrees(float fAngleDeg)
-        {
-            Mat4x4 matrix = new Mat4x4();
-            float fAngleRad = fAngleDeg * MathF.PI / 180;
-            matrix.m[0, 0] = MathF.Cos(fAngleRad);
-            matrix.m[0, 1] = MathF.Sin(fAngleRad);
-            matrix.m[1, 0] = -MathF.Sin(fAngleRad);
-            matrix.m[1, 1] = MathF.Cos(fAngleRad);
-            matrix.m[2, 2] = 1.0f;
-            matrix.m[3, 3] = 1.0f;
-            return matrix;
-        }
-
-        public static Mat4x4 Matrix_MakeTranslation(float x, float y, float z)
-        {
-            Mat4x4 matrix = Matrix_MakeIdentity();
+            Mat4x4 matrix = MakeIdentity();
             matrix.m[3,0] = x;
             matrix.m[3,1] = y;
             matrix.m[3,2] = z;
             return matrix;
         }
-        public static Mat4x4 Matrix_MakeScale(float x)
-        {
-            Mat4x4 matrix = Matrix_MakeIdentity();
-            matrix.m[0, 0] = x;
-            return matrix;
-        }
 
-        public static Mat4x4 Matrix_MakeScale(float x, float y)
+        // Returns a scale matrix
+        public static Mat4x4 MakeScale(float x = 1, float y = 1, float z = 1)
         {
-            Mat4x4 matrix = Matrix_MakeIdentity();
-            matrix.m[0, 0] = x;
-            matrix.m[1, 1] = y;
-            return matrix;
-        }
-        public static Mat4x4 Matrix_MakeScale(float x, float y, float z)
-        {
-            Mat4x4 matrix = Matrix_MakeIdentity();
+            Mat4x4 matrix = MakeIdentity();
             matrix.m[0, 0] = x;
             matrix.m[1, 1] = y;
             matrix.m[2, 2] = z;
             return matrix;
         }
 
-
-        public static Mat4x4 Matrix_MakeProjection(float fovDegrees, float aspectRatio, float zNear, float zFar)
+        // Returns a projection matrix. Requires the field of view,
+        // aspect ratio, and near and far z planes
+        public static Mat4x4 MakeProjection(float fovDegrees, float aspectRatio, float zNear, float zFar)
         {
-            // Aspect ratio prevents stretching when screen height and width vary
-            // Field of view effectively zooms in or out when decreased or increased respectively
-            // Near and Far planes represent the top and bottom of the viewing frustrum in positive z direction
-            float fFovRad = 1.0f / MathF.Tan(fovDegrees * 0.5f / 180.0f * MathF.PI);
+            float fFovRad = 1.0f / Tan(fovDegrees * 0.5f / 180.0f * PI);
             Mat4x4 matrix = new Mat4x4();
             matrix.m[0,0] = aspectRatio * fFovRad;
             matrix.m[1,1] = fFovRad;
@@ -299,19 +235,20 @@ namespace _3DModeler
             return matrix;
         }
 
-        public static Mat4x4 Matrix_PointAt(ref Vec3D pos, ref Vec3D target, ref Vec3D up)
+        // Returns a "Point At" matrix
+        public static Mat4x4 MakePointAt(ref Vec3D pos, ref Vec3D target, ref Vec3D up)
         {
             // Calculate new Forward direction
             Vec3D newForward = target - pos;
-            newForward = Vector_Normalize(ref newForward);
+            newForward = Normalize(ref newForward);
 
             // Calculate new Up direction incase forward vector has a y-component
-            Vec3D a = newForward * Vector_DotProduct(ref up, ref newForward);
+            Vec3D a = newForward * DotProduct(ref up, ref newForward);
             Vec3D newUp = up - a;
-            newUp = Vector_Normalize(ref newUp);
+            newUp = Normalize(ref newUp);
 
             // New Right direction is just cross product
-            Vec3D newRight = Vector_CrossProduct(ref newUp, ref newForward);
+            Vec3D newRight = CrossProduct(ref newUp, ref newForward);
 
             // Construct Dimensioning and Translation Matrix	
             Mat4x4 matrix = new Mat4x4();
@@ -334,8 +271,8 @@ namespace _3DModeler
             return matrix;
         }
 
-        // Only for Rotation/Translation Matrices
-        public static Mat4x4 Matrix_QuickInverse(ref Mat4x4 m) 
+        // Returns the inverse of rotation or translation matrices
+        public static Mat4x4 QuickInverse(ref Mat4x4 m) 
         {
             Mat4x4 matrix = new Mat4x4();
             matrix.m[0,0] = m.m[0,0]; 
@@ -356,19 +293,23 @@ namespace _3DModeler
             matrix.m[3,3] = 1.0f;
             return matrix;
         }
-        public static float Vector_DotProduct(ref Vec3D v1, ref Vec3D v2)
+
+        // Returns the dot product of two vectors
+        public static float DotProduct(ref Vec3D v1, ref Vec3D v2)
         {
             return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
         }
 
-        public static float Vector_Length(ref Vec3D v)
+        // Returns the length of a vector
+        public static float Length(ref Vec3D v)
         {
-            return MathF.Sqrt(Vector_DotProduct(ref v, ref v));
+            return Sqrt(DotProduct(ref v, ref v));
         }
 
-        public static Vec3D Vector_Normalize(ref Vec3D v)
+        // Returns the normalized vector of a vector
+        public static Vec3D Normalize(ref Vec3D v)
         {
-            float l = Vector_Length(ref v);
+            float l = Length(ref v);
             Vec3D vec3D = new Vec3D
             {
                 x = v.x / l,
@@ -378,7 +319,8 @@ namespace _3DModeler
             return vec3D;
         }
 
-        public static Vec3D Vector_CrossProduct(ref Vec3D v1, ref Vec3D v2)
+        // Returns the cross product of two vectors
+        public static Vec3D CrossProduct(ref Vec3D v1, ref Vec3D v2)
         {
             Vec3D v = new Vec3D
             {
@@ -388,12 +330,15 @@ namespace _3DModeler
             };          
             return v;
         }
-        public static Vec3D Vector_IntersectPlane(ref Vec3D plane_p, ref Vec3D plane_n, ref Vec3D lineStart, ref Vec3D lineEnd, ref float t)
+
+        // Returns the point of intersection between a line and a plane.
+        // The scale parameter t is passed out via reference
+        public static Vec3D IntersectPlane(ref Vec3D plane_p, ref Vec3D plane_n, ref Vec3D lineStart, ref Vec3D lineEnd, ref float t)
         {
-            plane_n = Vector_Normalize(ref plane_n);
-            float plane_d = -Vector_DotProduct(ref plane_n, ref plane_p);
-            float ad = Vector_DotProduct(ref lineStart, ref plane_n);
-            float bd = Vector_DotProduct(ref lineEnd, ref plane_n);
+            plane_n = Normalize(ref plane_n);
+            float plane_d = -DotProduct(ref plane_n, ref plane_p);
+            float ad = DotProduct(ref lineStart, ref plane_n);
+            float bd = DotProduct(ref lineEnd, ref plane_n);
             t = (-plane_d - ad) / (bd - ad);
             Vec3D lineStartToEnd = lineEnd - lineStart;
             Vec3D lineToIntersect = lineStartToEnd * t;
