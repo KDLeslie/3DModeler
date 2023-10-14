@@ -11,32 +11,46 @@ namespace _3DModeler
         public MainForm()
         {
             InitializeComponent();
+            Stopwatch = new Stopwatch();
+            // Initialize the class and components pertaining to the main view
+            // into the world. Increasing pixel width/height improves performance
+            // a little at the cost of a lot of visual quality
+            MainView = new Viewport(ViewWindow.Width, ViewWindow.Height, 1, 1);
+            Meshes = new List<Mesh>();
+            // Rendering frames needs these keys to be initialized in the dictionary
+            // by default
+            KeyPressed = new Dictionary<Keys, bool>()
+            {
+                { Keys.O, false },
+                { Keys.L, false },
+                { Keys.K, false },
+                { Keys.OemSemicolon, false },
+                { Keys.W, false },
+                { Keys.S, false },
+                { Keys.D, false },
+                { Keys.A, false },
+                { Keys.R, false },
+                { Keys.F, false },
+            };
+            Stopwatch.Start();
+            // How often the tick event is run
+            Clock.Interval = 20;
+            Clock.Enabled = true;
+            // Setup Projection Matrix
+            MainView.ProjMat = MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
         }
-        Stopwatch Stopwatch = new Stopwatch(); // Stores the total time from start
-        Viewport MainView = new Viewport(); // The interface that displays the 3D graphics
+        Stopwatch Stopwatch; // Stores the total time from start
+        Viewport MainView; // The interface that displays the 3D graphics
         int FrameCount = 0; // Counts how many frames were rendered. Reset each second
         int FPS = 0; // Stores the current frame rate of the viewport
         float FrameTime = 0; // Stores the cumulative time between frames         
         float Tick = 0; // A time variable storing the point in time right before rendering the current frame
         float Tock = 0; // A time variable storing the point in time right before rendering the last frame
         float ElapsedTime = 0;  // Stores the time between each frame in seconds
-        List<Mesh> Meshes = new List<Mesh>(); // Stores each mesh loaded from an obj file
+        List<Mesh> Meshes; // Stores each mesh loaded from an obj file
         PointF LastCursorPosition;
-        bool MousePressed = false;
-        // Stores what keys the user is currently pressing
-        Dictionary<Keys, bool> KeyPressed = new Dictionary<Keys, bool>()
-        {
-            { Keys.O, false },
-            { Keys.L, false },
-            { Keys.K, false },
-            { Keys.OemSemicolon, false },
-            { Keys.W, false },
-            { Keys.S, false },
-            { Keys.D, false },
-            { Keys.A, false },
-            { Keys.R, false },
-            { Keys.F, false },
-        };
+        bool MousePressed = false;        
+        Dictionary<Keys, bool> KeyPressed; // Stores what keys the user is currently pressing
 
         // A structure used for storing face information for a 3 vertex polygon
         struct Triangle
@@ -156,7 +170,6 @@ namespace _3DModeler
         // A class containing the information pertaining to a certain view into the world
         class Viewport
         {
-            public Viewport() { }
             public Viewport(int screenWidth, int screenHeight, int pixelWidth, int pixelHeight)
             {
                 this.ScreenWidth = screenWidth / pixelWidth;
@@ -176,7 +189,7 @@ namespace _3DModeler
             public int PixelWidth { get; set; }
             public int PixelHeight { get; set; }
             public float[] DepthBuffer { get; set; } = new float[0]; // Stores the z-depth of each screen pixel
-            public DirectBitmap Frame { get; set; } = new DirectBitmap(1, 1); // A bitmap of the frame drawn to the viewport
+            public DirectBitmap Frame { get; set; } // A bitmap of the frame drawn to the viewport
 
             // Takes in a plane, its normal, and a triangle to be clipped against the plane. It
             // creates 0-2 new triangles based on how the triangle intersects the plane, passed
@@ -693,8 +706,10 @@ namespace _3DModeler
         // https://stackoverflow.com/questions/24701703/c-sharp-faster-alternatives-to-setpixel-and-getpixel-for-bitmaps-for-windows-f
         class DirectBitmap : IDisposable
         {
-            public DirectBitmap() { }
+            public DirectBitmap()
+            {
 
+            }
             // Initializes a bitmap from an image file
             public DirectBitmap(string filePath)
             {
@@ -1167,28 +1182,13 @@ namespace _3DModeler
             }
         }
 
+        // Returns whether or not the key press should be registered
         private bool IsKeyIllegal(Keys key)
         {
             if ((key > Keys.D9 | key < Keys.D0) & key != Keys.Back & key != Keys.Enter & key != Keys.Delete & key != Keys.OemMinus & key != Keys.OemPeriod)
                 return true;
             else
                 return false;
-
-        }
-
-        // Called when the form loads
-        private void MainForm_Load(object sender, EventArgs e)
-        {
-            Stopwatch.Start();
-            // How often the tick event is run
-            Clock.Interval = 20;
-            Clock.Enabled = true;
-            // Initialize the class and components pertaining to the main view
-            // into the world. Increasing pixel width/height improves performance
-            // a little at the cost of a lot of visual quality
-            MainView = new Viewport(ViewWindow.Width, ViewWindow.Height, 1, 1);
-            // Setup Projection Matrix
-            MainView.ProjMat = MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
         }
 
         // Called each time the clock passes the time interval
@@ -1298,7 +1298,8 @@ namespace _3DModeler
 
 
             // Dispose of the previous frame
-            MainView.Frame.Dispose();
+            if (MainView.Frame != null)
+                MainView.Frame.Dispose();
             // Create a new background color for the frame
             ViewWindow.BackColor = Color.Cyan;
             // By default, the bitmap produced is entirely transparent
@@ -1499,10 +1500,14 @@ namespace _3DModeler
         private void MainForm_SizeChanged(object sender, EventArgs e)
         {
             // Updates the viewport with the form
-            MainView.ScreenWidth = ViewWindow.Width / MainView.PixelWidth;
-            MainView.ScreenHeight = ViewWindow.Height / MainView.PixelHeight;
-            MainView.DepthBuffer = new float[MainView.ScreenWidth * MainView.ScreenHeight];
-            MainView.ProjMat = MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
+            if (MainView != null)
+            {
+                MainView.ScreenWidth = ViewWindow.Width / MainView.PixelWidth;
+                MainView.ScreenHeight = ViewWindow.Height / MainView.PixelHeight;
+                MainView.DepthBuffer = new float[MainView.ScreenWidth * MainView.ScreenHeight];
+                MainView.ProjMat = MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
+            }
+
         }
 
         // Opens obj files

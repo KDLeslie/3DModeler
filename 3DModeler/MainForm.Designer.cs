@@ -391,7 +391,6 @@
             MinimumSize = new Size(1000, 600);
             Name = "MainForm";
             Text = "3DModeler";
-            Load += MainForm_Load;
             SizeChanged += MainForm_SizeChanged;
             Click += MainForm_Click;
             KeyDown += MainForm_KeyDown;
