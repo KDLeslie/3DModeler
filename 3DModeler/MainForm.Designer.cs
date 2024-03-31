@@ -61,6 +61,7 @@
             UpDownY = new NumericUpDown();
             UpDownZ = new NumericUpDown();
             LabelObjectList = new Label();
+            sphereToolStripMenuItem = new ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)ViewWindow).BeginInit();
             MenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).BeginInit();
@@ -74,10 +75,10 @@
             // ViewWindow
             // 
             ViewWindow.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            ViewWindow.Location = new Point(201, 20);
-            ViewWindow.Margin = new Padding(2, 1, 2, 1);
+            ViewWindow.Location = new Point(373, 43);
+            ViewWindow.Margin = new Padding(4, 2, 4, 2);
             ViewWindow.Name = "ViewWindow";
-            ViewWindow.Size = new Size(538, 388);
+            ViewWindow.Size = new Size(999, 828);
             ViewWindow.TabIndex = 0;
             ViewWindow.TabStop = false;
             ViewWindow.Click += ViewWindow_Click;
@@ -97,8 +98,7 @@
             MenuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, displayToolStripMenuItem, addToolStripMenuItem, resetToolStripMenuItem });
             MenuStrip.Location = new Point(0, 0);
             MenuStrip.Name = "MenuStrip";
-            MenuStrip.Padding = new Padding(3, 1, 0, 1);
-            MenuStrip.Size = new Size(740, 24);
+            MenuStrip.Size = new Size(1374, 42);
             MenuStrip.TabIndex = 4;
             MenuStrip.Text = "menuStrip1";
             // 
@@ -106,20 +106,20 @@
             // 
             fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openToolStripMenuItem, saveASToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            fileToolStripMenuItem.Size = new Size(37, 22);
+            fileToolStripMenuItem.Size = new Size(71, 38);
             fileToolStripMenuItem.Text = "File";
             // 
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new Size(123, 22);
+            openToolStripMenuItem.Size = new Size(244, 44);
             openToolStripMenuItem.Text = "Open";
             openToolStripMenuItem.Click += OpenToolStripMenuItem_Click;
             // 
             // saveASToolStripMenuItem
             // 
             saveASToolStripMenuItem.Name = "saveASToolStripMenuItem";
-            saveASToolStripMenuItem.Size = new Size(123, 22);
+            saveASToolStripMenuItem.Size = new Size(244, 44);
             saveASToolStripMenuItem.Text = "Save As...";
             saveASToolStripMenuItem.Click += SaveAsToolStripMenuItem_Click;
             // 
@@ -127,7 +127,7 @@
             // 
             displayToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { WireframeToolStripMenuItem, CullingToolStripMenuItem, ShadingToolStripMenuItem, SolidToolStripMenuItem, TextureToolStripMenuItem });
             displayToolStripMenuItem.Name = "displayToolStripMenuItem";
-            displayToolStripMenuItem.Size = new Size(57, 22);
+            displayToolStripMenuItem.Size = new Size(111, 38);
             displayToolStripMenuItem.Text = "Display";
             // 
             // WireframeToolStripMenuItem
@@ -135,7 +135,7 @@
             WireframeToolStripMenuItem.CheckOnClick = true;
             WireframeToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             WireframeToolStripMenuItem.Name = "WireframeToolStripMenuItem";
-            WireframeToolStripMenuItem.Size = new Size(129, 22);
+            WireframeToolStripMenuItem.Size = new Size(359, 44);
             WireframeToolStripMenuItem.Text = "Wireframe";
             // 
             // CullingToolStripMenuItem
@@ -145,7 +145,7 @@
             CullingToolStripMenuItem.CheckState = CheckState.Checked;
             CullingToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             CullingToolStripMenuItem.Name = "CullingToolStripMenuItem";
-            CullingToolStripMenuItem.Size = new Size(129, 22);
+            CullingToolStripMenuItem.Size = new Size(359, 44);
             CullingToolStripMenuItem.Text = "Culling";
             // 
             // ShadingToolStripMenuItem
@@ -155,7 +155,7 @@
             ShadingToolStripMenuItem.CheckState = CheckState.Checked;
             ShadingToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             ShadingToolStripMenuItem.Name = "ShadingToolStripMenuItem";
-            ShadingToolStripMenuItem.Size = new Size(129, 22);
+            ShadingToolStripMenuItem.Size = new Size(359, 44);
             ShadingToolStripMenuItem.Text = "Shading";
             // 
             // SolidToolStripMenuItem
@@ -165,7 +165,7 @@
             SolidToolStripMenuItem.CheckState = CheckState.Checked;
             SolidToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             SolidToolStripMenuItem.Name = "SolidToolStripMenuItem";
-            SolidToolStripMenuItem.Size = new Size(129, 22);
+            SolidToolStripMenuItem.Size = new Size(359, 44);
             SolidToolStripMenuItem.Text = "Solid";
             // 
             // TextureToolStripMenuItem
@@ -175,20 +175,20 @@
             TextureToolStripMenuItem.CheckState = CheckState.Checked;
             TextureToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             TextureToolStripMenuItem.Name = "TextureToolStripMenuItem";
-            TextureToolStripMenuItem.Size = new Size(129, 22);
+            TextureToolStripMenuItem.Size = new Size(359, 44);
             TextureToolStripMenuItem.Text = "Texture";
             // 
             // addToolStripMenuItem
             // 
-            addToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { cubeToolStripMenuItem });
+            addToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { cubeToolStripMenuItem, sphereToolStripMenuItem });
             addToolStripMenuItem.Name = "addToolStripMenuItem";
-            addToolStripMenuItem.Size = new Size(41, 22);
+            addToolStripMenuItem.Size = new Size(77, 38);
             addToolStripMenuItem.Text = "Add";
             // 
             // cubeToolStripMenuItem
             // 
             cubeToolStripMenuItem.Name = "cubeToolStripMenuItem";
-            cubeToolStripMenuItem.Size = new Size(102, 22);
+            cubeToolStripMenuItem.Size = new Size(359, 44);
             cubeToolStripMenuItem.Text = "Cube";
             cubeToolStripMenuItem.Click += CubeToolStripMenuItem_Click;
             // 
@@ -196,31 +196,31 @@
             // 
             resetToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { CameraToolStripMenuItem, WorldToolStripMenuItem });
             resetToolStripMenuItem.Name = "resetToolStripMenuItem";
-            resetToolStripMenuItem.Size = new Size(47, 22);
+            resetToolStripMenuItem.Size = new Size(91, 38);
             resetToolStripMenuItem.Text = "Reset";
             // 
             // CameraToolStripMenuItem
             // 
             CameraToolStripMenuItem.Name = "CameraToolStripMenuItem";
-            CameraToolStripMenuItem.Size = new Size(115, 22);
+            CameraToolStripMenuItem.Size = new Size(228, 44);
             CameraToolStripMenuItem.Text = "Camera";
             CameraToolStripMenuItem.Click += CameraToolStripMenuItem_Click;
             // 
             // WorldToolStripMenuItem
             // 
             WorldToolStripMenuItem.Name = "WorldToolStripMenuItem";
-            WorldToolStripMenuItem.Size = new Size(115, 22);
+            WorldToolStripMenuItem.Size = new Size(228, 44);
             WorldToolStripMenuItem.Text = "World";
             WorldToolStripMenuItem.Click += WorldToolStripMenuItem_Click;
             // 
             // CameraSpeedSlider
             // 
             CameraSpeedSlider.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            CameraSpeedSlider.Location = new Point(0, 366);
-            CameraSpeedSlider.Margin = new Padding(2, 1, 2, 1);
+            CameraSpeedSlider.Location = new Point(0, 781);
+            CameraSpeedSlider.Margin = new Padding(4, 2, 4, 2);
             CameraSpeedSlider.Maximum = 100;
             CameraSpeedSlider.Name = "CameraSpeedSlider";
-            CameraSpeedSlider.Size = new Size(140, 45);
+            CameraSpeedSlider.Size = new Size(260, 90);
             CameraSpeedSlider.TabIndex = 5;
             CameraSpeedSlider.TickFrequency = 10;
             CameraSpeedSlider.Value = 8;
@@ -230,20 +230,20 @@
             // 
             CamSpeedLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             CamSpeedLabel.AutoSize = true;
-            CamSpeedLabel.Location = new Point(5, 350);
-            CamSpeedLabel.Margin = new Padding(2, 0, 2, 0);
+            CamSpeedLabel.Location = new Point(9, 747);
+            CamSpeedLabel.Margin = new Padding(4, 0, 4, 0);
             CamSpeedLabel.Name = "CamSpeedLabel";
-            CamSpeedLabel.Size = new Size(86, 15);
+            CamSpeedLabel.Size = new Size(174, 32);
             CamSpeedLabel.TabIndex = 6;
             CamSpeedLabel.Text = "Camera Speed:";
             // 
             // CamSpeedUpDown
             // 
             CamSpeedUpDown.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            CamSpeedUpDown.Location = new Point(143, 366);
-            CamSpeedUpDown.Margin = new Padding(2, 1, 2, 1);
+            CamSpeedUpDown.Location = new Point(266, 781);
+            CamSpeedUpDown.Margin = new Padding(4, 2, 4, 2);
             CamSpeedUpDown.Name = "CamSpeedUpDown";
-            CamSpeedUpDown.Size = new Size(42, 23);
+            CamSpeedUpDown.Size = new Size(78, 39);
             CamSpeedUpDown.TabIndex = 7;
             CamSpeedUpDown.Value = new decimal(new int[] { 8, 0, 0, 0 });
             CamSpeedUpDown.ValueChanged += CamSpeedUpDown_ValueChanged;
@@ -253,11 +253,11 @@
             // 
             ObjectList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             ObjectList.FormattingEnabled = true;
-            ObjectList.ItemHeight = 15;
-            ObjectList.Location = new Point(6, 46);
-            ObjectList.Margin = new Padding(2, 1, 2, 1);
+            ObjectList.ItemHeight = 32;
+            ObjectList.Location = new Point(11, 98);
+            ObjectList.Margin = new Padding(4, 2, 4, 2);
             ObjectList.Name = "ObjectList";
-            ObjectList.Size = new Size(181, 199);
+            ObjectList.Size = new Size(333, 420);
             ObjectList.TabIndex = 8;
             ObjectList.SelectedIndexChanged += ObjectList_SelectedIndexChanged;
             ObjectList.MouseUp += ObjectList_MouseUp;
@@ -267,12 +267,12 @@
             ContextMenuStrip.ImageScalingSize = new Size(32, 32);
             ContextMenuStrip.Items.AddRange(new ToolStripItem[] { deleteToolStripMenuItem });
             ContextMenuStrip.Name = "contextMenuStrip1";
-            ContextMenuStrip.Size = new Size(108, 26);
+            ContextMenuStrip.Size = new Size(159, 42);
             // 
             // deleteToolStripMenuItem
             // 
             deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            deleteToolStripMenuItem.Size = new Size(107, 22);
+            deleteToolStripMenuItem.Size = new Size(158, 38);
             deleteToolStripMenuItem.Text = "Delete";
             deleteToolStripMenuItem.Click += deleteToolStripMenuItem_Click;
             // 
@@ -281,10 +281,10 @@
             TransformationBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             TransformationBox.FormattingEnabled = true;
             TransformationBox.Items.AddRange(new object[] { "Translation", "Rotation", "Scale" });
-            TransformationBox.Location = new Point(77, 258);
-            TransformationBox.Margin = new Padding(2, 1, 2, 1);
+            TransformationBox.Location = new Point(143, 550);
+            TransformationBox.Margin = new Padding(4, 2, 4, 2);
             TransformationBox.Name = "TransformationBox";
-            TransformationBox.Size = new Size(110, 23);
+            TransformationBox.Size = new Size(201, 40);
             TransformationBox.TabIndex = 9;
             TransformationBox.Text = "Translation";
             TransformationBox.SelectedIndexChanged += TransformationBox_SelectedIndexChanged;
@@ -293,10 +293,10 @@
             // 
             LabelX.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelX.AutoSize = true;
-            LabelX.Location = new Point(53, 281);
-            LabelX.Margin = new Padding(2, 0, 2, 0);
+            LabelX.Location = new Point(98, 599);
+            LabelX.Margin = new Padding(4, 0, 4, 0);
             LabelX.Name = "LabelX";
-            LabelX.Size = new Size(17, 15);
+            LabelX.Size = new Size(33, 32);
             LabelX.TabIndex = 13;
             LabelX.Text = "X:";
             // 
@@ -304,10 +304,10 @@
             // 
             LabelY.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelY.AutoSize = true;
-            LabelY.Location = new Point(53, 302);
-            LabelY.Margin = new Padding(2, 0, 2, 0);
+            LabelY.Location = new Point(98, 644);
+            LabelY.Margin = new Padding(4, 0, 4, 0);
             LabelY.Name = "LabelY";
-            LabelY.Size = new Size(17, 15);
+            LabelY.Size = new Size(32, 32);
             LabelY.TabIndex = 14;
             LabelY.Text = "Y:";
             // 
@@ -315,10 +315,10 @@
             // 
             LabelZ.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelZ.AutoSize = true;
-            LabelZ.Location = new Point(53, 323);
-            LabelZ.Margin = new Padding(2, 0, 2, 0);
+            LabelZ.Location = new Point(98, 689);
+            LabelZ.Margin = new Padding(4, 0, 4, 0);
             LabelZ.Name = "LabelZ";
-            LabelZ.Size = new Size(17, 15);
+            LabelZ.Size = new Size(33, 32);
             LabelZ.TabIndex = 15;
             LabelZ.Text = "Z:";
             // 
@@ -326,10 +326,10 @@
             // 
             LabelTransform.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LabelTransform.AutoSize = true;
-            LabelTransform.Location = new Point(3, 260);
-            LabelTransform.Margin = new Padding(2, 0, 2, 0);
+            LabelTransform.Location = new Point(6, 555);
+            LabelTransform.Margin = new Padding(4, 0, 4, 0);
             LabelTransform.Name = "LabelTransform";
-            LabelTransform.Size = new Size(63, 15);
+            LabelTransform.Size = new Size(125, 32);
             LabelTransform.TabIndex = 16;
             LabelTransform.Text = "Transform:";
             // 
@@ -337,12 +337,12 @@
             // 
             UpDownX.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             UpDownX.DecimalPlaces = 4;
-            UpDownX.Location = new Point(77, 280);
-            UpDownX.Margin = new Padding(2, 1, 2, 1);
+            UpDownX.Location = new Point(143, 597);
+            UpDownX.Margin = new Padding(4, 2, 4, 2);
             UpDownX.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             UpDownX.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
             UpDownX.Name = "UpDownX";
-            UpDownX.Size = new Size(108, 23);
+            UpDownX.Size = new Size(201, 39);
             UpDownX.TabIndex = 17;
             UpDownX.ValueChanged += UpDownX_ValueChanged;
             UpDownX.KeyDown += UpDownX_KeyDown;
@@ -351,12 +351,12 @@
             // 
             UpDownY.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             UpDownY.DecimalPlaces = 4;
-            UpDownY.Location = new Point(77, 301);
-            UpDownY.Margin = new Padding(2, 1, 2, 1);
+            UpDownY.Location = new Point(143, 642);
+            UpDownY.Margin = new Padding(4, 2, 4, 2);
             UpDownY.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             UpDownY.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
             UpDownY.Name = "UpDownY";
-            UpDownY.Size = new Size(108, 23);
+            UpDownY.Size = new Size(201, 39);
             UpDownY.TabIndex = 18;
             UpDownY.ValueChanged += UpDownY_ValueChanged;
             UpDownY.KeyDown += UpDownY_KeyDown;
@@ -365,12 +365,12 @@
             // 
             UpDownZ.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             UpDownZ.DecimalPlaces = 4;
-            UpDownZ.Location = new Point(77, 322);
-            UpDownZ.Margin = new Padding(2, 1, 2, 1);
+            UpDownZ.Location = new Point(143, 687);
+            UpDownZ.Margin = new Padding(4, 2, 4, 2);
             UpDownZ.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             UpDownZ.Minimum = new decimal(new int[] { 10000, 0, 0, int.MinValue });
             UpDownZ.Name = "UpDownZ";
-            UpDownZ.Size = new Size(108, 23);
+            UpDownZ.Size = new Size(201, 39);
             UpDownZ.TabIndex = 19;
             UpDownZ.ValueChanged += UpDownZ_ValueChanged;
             UpDownZ.KeyDown += UpDownZ_KeyDown;
@@ -378,19 +378,26 @@
             // LabelObjectList
             // 
             LabelObjectList.AutoSize = true;
-            LabelObjectList.Location = new Point(5, 24);
-            LabelObjectList.Margin = new Padding(2, 0, 2, 0);
+            LabelObjectList.Location = new Point(9, 51);
+            LabelObjectList.Margin = new Padding(4, 0, 4, 0);
             LabelObjectList.Name = "LabelObjectList";
-            LabelObjectList.Size = new Size(66, 15);
+            LabelObjectList.Size = new Size(131, 32);
             LabelObjectList.TabIndex = 20;
             LabelObjectList.Text = "Object List:";
             // 
+            // sphereToolStripMenuItem
+            // 
+            sphereToolStripMenuItem.Name = "sphereToolStripMenuItem";
+            sphereToolStripMenuItem.Size = new Size(359, 44);
+            sphereToolStripMenuItem.Text = "Sphere";
+            sphereToolStripMenuItem.Click += sphereToolStripMenuItem_Click;
+            // 
             // MainForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(255, 245, 245);
-            ClientSize = new Size(740, 410);
+            ClientSize = new Size(1374, 875);
             Controls.Add(LabelObjectList);
             Controls.Add(UpDownZ);
             Controls.Add(UpDownY);
@@ -408,8 +415,8 @@
             Controls.Add(MenuStrip);
             KeyPreview = true;
             MainMenuStrip = MenuStrip;
-            Margin = new Padding(2, 1, 2, 1);
-            MinimumSize = new Size(546, 302);
+            Margin = new Padding(4, 2, 4, 2);
+            MinimumSize = new Size(992, 564);
             Name = "MainForm";
             Text = "3DModeler";
             SizeChanged += MainForm_SizeChanged;
@@ -463,5 +470,6 @@
         private NumericUpDown UpDownY;
         private NumericUpDown UpDownZ;
         private Label LabelObjectList;
+        private ToolStripMenuItem sphereToolStripMenuItem;
     }
 }
