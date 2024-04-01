@@ -8,7 +8,7 @@ using static _3DModeler.Operations;
 namespace _3DModeler
 {
     // A class containing the information pertaining to a certain view into the world
-    class Viewport
+    public class Viewport
     {
         public Viewport(int screenWidth, int screenHeight, int pixelWidth, int pixelHeight)
         {
@@ -17,6 +17,7 @@ namespace _3DModeler
             this.PixelWidth = pixelWidth;
             this.PixelHeight = pixelHeight;
             this.DepthBuffer = new float[screenWidth * screenHeight];
+            this.ProjMat = MakeProjection(90, (float)ScreenHeight / (float)ScreenWidth, 0.1f, 1000.0f);
         }
         public Mat4x4 ProjMat = new Mat4x4(); // Matrix that converts from view space to screen space
         public Vec3D CameraPosition = new Vec3D(0, 0, -5); // Location of camera in world space

@@ -7,8 +7,163 @@ using static _3DModeler.Operations;
 
 namespace _3DModeler
 {
+    // A 2D structure to hold texture coordinates
+    // Perhaps replace with one from System.Numerics
+    public struct Vec2D
+    {
+        public Vec2D() { }
+
+        public Vec2D(float u, float v)
+        {
+            this.u = u;
+            this.v = v;
+        }
+        public Vec2D(Vec2D vec2D)
+        {
+            this.u = vec2D.u;
+            this.v = vec2D.v;
+            this.w = vec2D.w;
+        }
+
+        public float u = 0;
+        public float v = 0;
+        public float w = 1; // Keeps track of the depth of each texture coordinate
+
+        public bool Equals(Vec2D p)
+        {
+            return this.u == p.u && this.v == p.v;
+        }
+    }
+
+    // A 3D structure to hold vertex coordinates
+    public struct Vec3D
+    {
+        public Vec3D() { }
+
+        public Vec3D(float x, float y, float z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        public Vec3D(Vec3D vec3D)
+        {
+            this.w = vec3D.w;
+            this.x = vec3D.x;
+            this.y = vec3D.y;
+            this.z = vec3D.z;
+        }
+        public static Vec3D operator +(Vec3D lhs, Vec3D rhs)
+        {
+            Vec3D vec3D = new Vec3D
+            {
+                x = lhs.x + rhs.x,
+                y = lhs.y + rhs.y,
+                z = lhs.z + rhs.z
+            };
+            return vec3D;
+        }
+        public static Vec3D operator +(Vec3D lhs, float rhs)
+        {
+            Vec3D vec3D = new Vec3D
+            {
+                x = lhs.x + rhs,
+                y = lhs.y + rhs,
+                z = lhs.z + rhs
+            };
+            return vec3D;
+        }
+        public static Vec3D operator -(Vec3D vec)
+        {
+            Vec3D vec3D = new Vec3D
+            {
+                x = -vec.x,
+                y = -vec.y,
+                z = -vec.z
+            };
+            return vec3D;
+        }
+        public static Vec3D operator -(Vec3D lhs, Vec3D rhs)
+        {
+            Vec3D vec3D = new Vec3D
+            {
+                x = lhs.x - rhs.x,
+                y = lhs.y - rhs.y,
+                z = lhs.z - rhs.z
+            };
+            return vec3D;
+        }
+        public static Vec3D operator -(Vec3D lhs, float rhs)
+        {
+            Vec3D vec3D = new Vec3D
+            {
+                x = lhs.x - rhs,
+                y = lhs.y - rhs,
+                z = lhs.z - rhs
+            };
+            return vec3D;
+        }
+        public static Vec3D operator *(Vec3D lhs, float rhs)
+        {
+            Vec3D vec3D = new Vec3D
+            {
+                x = lhs.x * rhs,
+                y = lhs.y * rhs,
+                z = lhs.z * rhs
+            };
+            return vec3D;
+        }
+        public static Vec3D operator /(Vec3D lhs, float rhs)
+        {
+            Vec3D vec3D = new Vec3D
+            {
+                x = lhs.x / rhs,
+                y = lhs.y / rhs,
+                z = lhs.z / rhs
+            };
+            return vec3D;
+        }
+
+        public float x = 0;
+        public float y = 0;
+        public float z = 0;
+        public float w = 1; // 4th term is needed for vector multiplication
+
+        public bool Equals(Vec3D p)
+        {
+            return this.x == p.x && this.y == p.y && this.z == p.z;
+        }
+    }
+
+    // A matrix structure used for many vector transformations
+    public struct Mat4x4
+    {
+        public Mat4x4() { }
+        public static Vec3D operator *(Vec3D lhs, Mat4x4 rhs)
+        {
+            Vec3D v = new Vec3D
+            {
+                x = lhs.x * rhs.m[0, 0] + lhs.y * rhs.m[1, 0] + lhs.z * rhs.m[2, 0] + lhs.w * rhs.m[3, 0],
+                y = lhs.x * rhs.m[0, 1] + lhs.y * rhs.m[1, 1] + lhs.z * rhs.m[2, 1] + lhs.w * rhs.m[3, 1],
+                z = lhs.x * rhs.m[0, 2] + lhs.y * rhs.m[1, 2] + lhs.z * rhs.m[2, 2] + lhs.w * rhs.m[3, 2],
+                w = lhs.x * rhs.m[0, 3] + lhs.y * rhs.m[1, 3] + lhs.z * rhs.m[2, 3] + lhs.w * rhs.m[3, 3]
+            };
+            return v;
+        }
+        public static Mat4x4 operator *(Mat4x4 lhs, Mat4x4 rhs)
+        {
+            Mat4x4 matrix = new Mat4x4();
+            for (int c = 0; c < 4; c++)
+                for (int r = 0; r < 4; r++)
+                    matrix.m[r, c] = lhs.m[r, 0] * rhs.m[0, c] + lhs.m[r, 1] * rhs.m[1, c] + lhs.m[r, 2] * rhs.m[2, c] + lhs.m[r, 3] * rhs.m[3, c];
+            return matrix;
+        }
+
+        public float[,] m = new float[4, 4];
+    }
+
     // A structure used for storing face information for a 3 vertex polygon
-    struct Triangle
+    public struct Triangle
     {
         public Triangle() { }
         public Triangle(Triangle tri)
@@ -53,7 +208,7 @@ namespace _3DModeler
     }
 
     // A structure used for storing face information for a 4 vertex polygon
-    struct Quadrilateral
+    public struct Quadrilateral
     {
         public Quadrilateral() { }
         public Quadrilateral(ref Quadrilateral quad)
@@ -92,7 +247,7 @@ namespace _3DModeler
     }
 
     // A structure used for storing information for a 3D object
-    struct Mesh
+    public struct Mesh
     {
         public Mesh() { }
         public string name = "DefaultMesh"; // Used to identify different meshes
@@ -107,7 +262,7 @@ namespace _3DModeler
 
     // A structure containing the material information for each mesh.
     // Currently only used for texture information
-    struct Material
+    public struct Material
     {
         public Material() { }
         public float ns = 250;

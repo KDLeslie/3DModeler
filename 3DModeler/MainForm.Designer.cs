@@ -274,7 +274,7 @@
             deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
             deleteToolStripMenuItem.Size = new Size(158, 38);
             deleteToolStripMenuItem.Text = "Delete";
-            deleteToolStripMenuItem.Click += deleteToolStripMenuItem_Click;
+            deleteToolStripMenuItem.Click += DeleteToolStripMenuItem_Click;
             // 
             // TransformationBox
             // 
@@ -390,7 +390,7 @@
             sphereToolStripMenuItem.Name = "sphereToolStripMenuItem";
             sphereToolStripMenuItem.Size = new Size(359, 44);
             sphereToolStripMenuItem.Text = "Sphere";
-            sphereToolStripMenuItem.Click += sphereToolStripMenuItem_Click;
+            sphereToolStripMenuItem.Click += SphereToolStripMenuItem_Click;
             // 
             // MainForm
             // 
