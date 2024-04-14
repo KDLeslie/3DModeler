@@ -334,6 +334,8 @@ namespace _3DModeler
                             {
                                 // Look for the image through a relative path
                                 material.texture = new DirectBitmap(Path.Combine(folderPath, material.texturePath));
+                                // Remove the alpha as transparent textures are not yet supported
+                                material.texture.RemoveAlpha();
                                 material.hasTexture = true;
 
                             }
@@ -343,6 +345,8 @@ namespace _3DModeler
                                 {
                                     // Look for the image through an absolute path
                                     material.texture = new DirectBitmap(material.texturePath);
+                                    // Remove the alpha as transparent textures are not yet supported
+                                    material.texture.RemoveAlpha();
                                     material.hasTexture = true;
                                 }
                                 catch (ArgumentException)

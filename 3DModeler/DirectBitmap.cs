@@ -81,6 +81,14 @@ namespace _3DModeler
             Pixels[y * Width + x] = color.ToArgb();
         }
 
+        public void RemoveAlpha()
+        {
+            for (int p = 0; p < Pixels.Length; p++)
+            {
+                Pixels[p] = (int)(Pixels[p] | 0xFF000000);
+            }
+        }
+
         public Color GetPixel(int x, int y)
         {
             return Color.FromArgb(Pixels[y * Width + x]);
