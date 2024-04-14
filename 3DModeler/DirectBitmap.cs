@@ -71,6 +71,11 @@ namespace _3DModeler
         public int Width { get; private set; }
         protected GCHandle BitsHandle { get; private set; } // Used for retaining the pixel color data in memory
 
+        public void Clear()
+        {
+            Array.Clear(Pixels);
+        }
+
         public void SetPixel(int x, int y, Color color)
         {
             Pixels[y * Width + x] = color.ToArgb();

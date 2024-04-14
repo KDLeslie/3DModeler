@@ -550,18 +550,14 @@ namespace _3DModeler
             Mat4x4 viewMat = QuickInverse(ref matCamera);
 
 
-            // Dispose of the previous frame
+            // Clear pixels of the previous frame
+            // By default, the bitmap produced is entirely transparent
             if (MainView.Frame != null)
-                MainView.Frame.Dispose();
+                MainView.Frame.Clear();
             // Create a new background color for the frame
             ViewWindow.BackColor = Color.Cyan;
-            // By default, the bitmap produced is entirely transparent
-            MainView.Frame = new DirectBitmap(MainView.ScreenWidth, MainView.ScreenHeight);
             // Clear depth buffer each frame
-            for (int i = 0; i < MainView.ScreenWidth * MainView.ScreenHeight; i++)
-            {
-                MainView.DepthBuffer[i] = 0.0f;
-            }
+            Array.Clear(MainView.DepthBuffer);
 
             // Draw each mesh
             for (int i = 0; i < Meshes.Count; i++)
@@ -759,6 +755,7 @@ namespace _3DModeler
                 MainView.ScreenHeight = ViewWindow.Height / MainView.PixelHeight;
                 MainView.DepthBuffer = new float[MainView.ScreenWidth * MainView.ScreenHeight];
                 MainView.ProjMat = MakeProjection(90, (float)MainView.ScreenHeight / (float)MainView.ScreenWidth, 0.1f, 1000.0f);
+                MainView.Frame = new DirectBitmap(MainView.ScreenWidth, MainView.ScreenHeight);
             }
         }
 
@@ -1231,6 +1228,11 @@ namespace _3DModeler
             {
                 e.SuppressKeyPress = true;
             }
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            MainView.Frame = new DirectBitmap(MainView.ScreenWidth, MainView.ScreenHeight);
         }
     }
 }

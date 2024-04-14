@@ -43,6 +43,7 @@
             TextureToolStripMenuItem = new ToolStripMenuItem();
             addToolStripMenuItem = new ToolStripMenuItem();
             cubeToolStripMenuItem = new ToolStripMenuItem();
+            sphereToolStripMenuItem = new ToolStripMenuItem();
             resetToolStripMenuItem = new ToolStripMenuItem();
             CameraToolStripMenuItem = new ToolStripMenuItem();
             WorldToolStripMenuItem = new ToolStripMenuItem();
@@ -61,7 +62,6 @@
             UpDownY = new NumericUpDown();
             UpDownZ = new NumericUpDown();
             LabelObjectList = new Label();
-            sphereToolStripMenuItem = new ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)ViewWindow).BeginInit();
             MenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CameraSpeedSlider).BeginInit();
@@ -98,7 +98,7 @@
             MenuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, displayToolStripMenuItem, addToolStripMenuItem, resetToolStripMenuItem });
             MenuStrip.Location = new Point(0, 0);
             MenuStrip.Name = "MenuStrip";
-            MenuStrip.Size = new Size(1374, 42);
+            MenuStrip.Size = new Size(1374, 40);
             MenuStrip.TabIndex = 4;
             MenuStrip.Text = "menuStrip1";
             // 
@@ -106,7 +106,7 @@
             // 
             fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openToolStripMenuItem, saveASToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            fileToolStripMenuItem.Size = new Size(71, 38);
+            fileToolStripMenuItem.Size = new Size(71, 36);
             fileToolStripMenuItem.Text = "File";
             // 
             // openToolStripMenuItem
@@ -127,7 +127,7 @@
             // 
             displayToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { WireframeToolStripMenuItem, CullingToolStripMenuItem, ShadingToolStripMenuItem, SolidToolStripMenuItem, TextureToolStripMenuItem });
             displayToolStripMenuItem.Name = "displayToolStripMenuItem";
-            displayToolStripMenuItem.Size = new Size(111, 38);
+            displayToolStripMenuItem.Size = new Size(111, 36);
             displayToolStripMenuItem.Text = "Display";
             // 
             // WireframeToolStripMenuItem
@@ -135,7 +135,7 @@
             WireframeToolStripMenuItem.CheckOnClick = true;
             WireframeToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             WireframeToolStripMenuItem.Name = "WireframeToolStripMenuItem";
-            WireframeToolStripMenuItem.Size = new Size(359, 44);
+            WireframeToolStripMenuItem.Size = new Size(258, 44);
             WireframeToolStripMenuItem.Text = "Wireframe";
             // 
             // CullingToolStripMenuItem
@@ -145,7 +145,7 @@
             CullingToolStripMenuItem.CheckState = CheckState.Checked;
             CullingToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             CullingToolStripMenuItem.Name = "CullingToolStripMenuItem";
-            CullingToolStripMenuItem.Size = new Size(359, 44);
+            CullingToolStripMenuItem.Size = new Size(258, 44);
             CullingToolStripMenuItem.Text = "Culling";
             // 
             // ShadingToolStripMenuItem
@@ -155,7 +155,7 @@
             ShadingToolStripMenuItem.CheckState = CheckState.Checked;
             ShadingToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             ShadingToolStripMenuItem.Name = "ShadingToolStripMenuItem";
-            ShadingToolStripMenuItem.Size = new Size(359, 44);
+            ShadingToolStripMenuItem.Size = new Size(258, 44);
             ShadingToolStripMenuItem.Text = "Shading";
             // 
             // SolidToolStripMenuItem
@@ -165,7 +165,7 @@
             SolidToolStripMenuItem.CheckState = CheckState.Checked;
             SolidToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             SolidToolStripMenuItem.Name = "SolidToolStripMenuItem";
-            SolidToolStripMenuItem.Size = new Size(359, 44);
+            SolidToolStripMenuItem.Size = new Size(258, 44);
             SolidToolStripMenuItem.Text = "Solid";
             // 
             // TextureToolStripMenuItem
@@ -175,28 +175,35 @@
             TextureToolStripMenuItem.CheckState = CheckState.Checked;
             TextureToolStripMenuItem.ImageScaling = ToolStripItemImageScaling.None;
             TextureToolStripMenuItem.Name = "TextureToolStripMenuItem";
-            TextureToolStripMenuItem.Size = new Size(359, 44);
+            TextureToolStripMenuItem.Size = new Size(258, 44);
             TextureToolStripMenuItem.Text = "Texture";
             // 
             // addToolStripMenuItem
             // 
             addToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { cubeToolStripMenuItem, sphereToolStripMenuItem });
             addToolStripMenuItem.Name = "addToolStripMenuItem";
-            addToolStripMenuItem.Size = new Size(77, 38);
+            addToolStripMenuItem.Size = new Size(77, 36);
             addToolStripMenuItem.Text = "Add";
             // 
             // cubeToolStripMenuItem
             // 
             cubeToolStripMenuItem.Name = "cubeToolStripMenuItem";
-            cubeToolStripMenuItem.Size = new Size(359, 44);
+            cubeToolStripMenuItem.Size = new Size(222, 44);
             cubeToolStripMenuItem.Text = "Cube";
             cubeToolStripMenuItem.Click += CubeToolStripMenuItem_Click;
+            // 
+            // sphereToolStripMenuItem
+            // 
+            sphereToolStripMenuItem.Name = "sphereToolStripMenuItem";
+            sphereToolStripMenuItem.Size = new Size(222, 44);
+            sphereToolStripMenuItem.Text = "Sphere";
+            sphereToolStripMenuItem.Click += SphereToolStripMenuItem_Click;
             // 
             // resetToolStripMenuItem
             // 
             resetToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { CameraToolStripMenuItem, WorldToolStripMenuItem });
             resetToolStripMenuItem.Name = "resetToolStripMenuItem";
-            resetToolStripMenuItem.Size = new Size(91, 38);
+            resetToolStripMenuItem.Size = new Size(91, 36);
             resetToolStripMenuItem.Text = "Reset";
             // 
             // CameraToolStripMenuItem
@@ -385,13 +392,6 @@
             LabelObjectList.TabIndex = 20;
             LabelObjectList.Text = "Object List:";
             // 
-            // sphereToolStripMenuItem
-            // 
-            sphereToolStripMenuItem.Name = "sphereToolStripMenuItem";
-            sphereToolStripMenuItem.Size = new Size(359, 44);
-            sphereToolStripMenuItem.Text = "Sphere";
-            sphereToolStripMenuItem.Click += SphereToolStripMenuItem_Click;
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
@@ -419,6 +419,7 @@
             MinimumSize = new Size(992, 564);
             Name = "MainForm";
             Text = "3DModeler";
+            Load += MainForm_Load;
             SizeChanged += MainForm_SizeChanged;
             Click += MainForm_Click;
             KeyDown += MainForm_KeyDown;
